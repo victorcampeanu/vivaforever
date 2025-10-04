@@ -1,6 +1,6 @@
 {
   "functions": {
-    "editor/api/**/*.js": {
+    "api/**/*.js": {
       "memory": 1024,
       "maxDuration": 30
     }
@@ -9,15 +9,11 @@
     {
       "source": "/editor",
       "destination": "/editor/index.html"
-    },
-    {
-      "source": "/editor/(.*)",
-      "destination": "/editor/$1"
     }
   ],
   "headers": [
     {
-      "source": "/editor/api/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Credentials",

@@ -17,7 +17,7 @@ const ctx = canvas.getContext("2d");
 
 // ✅ SECURE: Using Vercel serverless functions (same domain)
 // No API key exposed! Backend functions handle OpenAI calls securely.
-const BACKEND_URL = "/editor"; // Editor is in /editor subfolder
+const BACKEND_URL = ""; // Empty = same domain, API is at /api/
 
 const quote1OpenAIButton = document.getElementById("quote1OpenAIButton");
 const quoteHistoryButton = document.getElementById("quoteHistoryButton");
