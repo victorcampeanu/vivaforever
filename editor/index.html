@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Courier+New:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="controls">
+      <!-- Quote 1 Section -->
+      <div class="control-section">
+        <h2>Quote 1</h2>
+        <div class="section-actions">
+          <button
+            type="button"
+            id="quoteHistoryButton"
+            class="openai-history-btn icon-only"
+            aria-label="Quote history"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M12 6V12L16 14"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8 2H16"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8 22H16"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            id="quote1OpenAIButton"
+            class="openai-btn"
+            title="Generate quote with OpenAI"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3V21M3 12H21"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="openai-spinner" aria-hidden="true"></span>
+          </button>
+          <div class="openai-history-panel" id="openaiHistoryPanel">
+            <div class="openai-history-header">
+              Recent
+              <button
+                type="button"
+                class="openai-history-clear"
+                id="openaiHistoryClear"
+              >
+                Clear
+              </button>
+            </div>
+            <ul class="openai-history-list" id="openaiHistoryList"></ul>
+            <div class="openai-history-empty" id="openaiHistoryEmpty">
+              No quotes generated yet.
+            </div>
+          </div>
+        </div>
+        <div class="control-group">
+          <textarea
+            id="quote1"
+            rows="4"
+            placeholder="Something beautiful..."
+          ></textarea>
+        </div>
+        <div class="control-group">
+          <div style="display: flex; gap: 10px; align-items: center">
+            <input
+              type="number"
+              id="quote1Size"
+              value="70"
+              min="10"
+              max="200"
+              style="width: 65px; padding: 6px 9px; font-size: 14px"
+            />
+            <select
+              id="quote1Weight"
+              style="flex: 1; padding: 6px 9px; font-size: 14px"
+            >
+              <option value="300">Light</option>
+              <option value="400">Regular</option>
+              <option value="600" selected>Semi-Bold</option>
+              <option value="700">Bold</option>
+            </select>
+            <input
+              type="number"
+              id="quote1LineHeight"
+              value="1.4"
+              min="0.5"
+              max="3"
+              step="0.1"
+              style="width: 65px; padding: 6px 9px; font-size: 14px"
+            />
+            <input
+              type="color"
+              id="quote1Color"
+              value="#000000"
+              style="
+                width: 50px;
+                height: 36px;
+                padding: 2px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+              "
+            />
+          </div>
+        </div>
+        <div class="control-group" style="margin-top: -4px">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              font-size: 12px;
+              color: #666;
+              padding: 0 2px;
+            "
+          >
+            <span style="width: 65px; text-align: center">Size</span>
+            <span style="flex: 1; text-align: center">Weight</span>
+            <span style="width: 65px; text-align: center">Line</span>
+            <span style="width: 50px; text-align: center">Color</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quote 2 Section -->
+      <div class="control-section" id="quote2Section" style="margin-top: 8px">
+        <h2>Quote 2</h2>
+        <div
+          class="toggle-switch"
+          style="position: absolute; top: 14px; right: 14px"
+        >
+          <input type="checkbox" id="enableQuote2Toggle" />
+          <span class="toggle-slider"></span>
+        </div>
+        <div class="control-group">
+          <textarea
+            id="quote2"
+            placeholder="Something even more beautiful..."
+          ></textarea>
+        </div>
+        <div class="control-group">
+          <div style="display: flex; gap: 10px; align-items: center">
+            <input
+              type="number"
+              id="quote2Size"
+              value="60"
+              min="10"
+              max="200"
+              style="width: 65px; padding: 6px 9px; font-size: 14px"
+            />
+            <select
+              id="quote2Weight"
+              style="flex: 1; padding: 6px 9px; font-size: 14px"
+            >
+              <option value="300">Light</option>
+              <option value="400" selected>Regular</option>
+              <option value="600">Semi-Bold</option>
+              <option value="700">Bold</option>
+            </select>
+            <input
+              type="number"
+              id="quote2LineHeight"
+              value="1.4"
+              min="0.5"
+              max="3"
+              step="0.1"
+              style="width: 65px; padding: 6px 9px; font-size: 14px"
+            />
+            <input
+              type="color"
+              id="quote2Color"
+              value="#000000"
+              style="
+                width: 50px;
+                height: 36px;
+                padding: 2px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+              "
+            />
+          </div>
+        </div>
+        <div class="control-group" style="margin-top: -4px">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              font-size: 12px;
+              color: #666;
+              padding: 0 2px;
+            "
+          >
+            <span style="width: 65px; text-align: center">Size</span>
+            <span style="flex: 1; text-align: center">Weight</span>
+            <span style="width: 65px; text-align: center">Line</span>
+            <span style="width: 50px; text-align: center">Color</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Author Section -->
+      <div class="control-section">
+        <h2>Author</h2>
+        <div class="control-group">
+          <input
+            type="text"
+            id="author"
+            value="by author"
+            placeholder="Enter author or source..."
+          />
+        </div>
+        <div class="control-group">
+          <div style="display: flex; gap: 10px; align-items: center">
+            <input
+              type="number"
+              id="authorSize"
+              value="36"
+              min="10"
+              max="100"
+              style="width: 65px; padding: 6px 9px; font-size: 14px"
+            />
+            <select
+              id="authorWeight"
+              style="flex: 1; padding: 6px 9px; font-size: 14px"
+            >
+              <option value="300">Light</option>
+              <option value="400" selected>Regular</option>
+              <option value="600">Semi-Bold</option>
+              <option value="700">Bold</option>
+            </select>
+            <input
+              type="color"
+              id="authorColor"
+              value="#8B7355"
+              style="
+                width: 50px;
+                height: 36px;
+                padding: 2px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+              "
+            />
+          </div>
+        </div>
+        <div class="control-group" style="margin-top: -4px">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              font-size: 12px;
+              color: #666;
+              padding: 0 2px;
+            "
+          >
+            <span style="width: 65px; text-align: center">Size</span>
+            <span style="flex: 1; text-align: center">Weight</span>
+            <span style="width: 50px; text-align: center">Color</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Size & Colors Section -->
+      <div class="control-section">
+        <h2>Settings</h2>
+        <div class="control-group" style="margin-bottom: 20px">
+          <div class="row">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <label style="margin-bottom: 0; font-weight: 400; font-size: 13px"
+                >Width</label
+              >
+              <input
+                type="number"
+                id="cardWidth"
+                value="970"
+                min="400"
+                max="2000"
+                style="
+                  width: 80px;
+                  font-weight: 400;
+                  padding: 6px 9px;
+                  font-size: 14px;
+                "
+              />
+            </div>
+            <span>×</span>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <label style="margin-bottom: 0; font-weight: 400; font-size: 13px"
+                >Height</label
+              >
+              <input
+                type="number"
+                id="cardHeight"
+                value="1074"
+                min="400"
+                max="2000"
+                style="
+                  width: 80px;
+                  font-weight: 400;
+                  padding: 6px 9px;
+                  font-size: 14px;
+                "
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="control-group"
+          style="margin-top: 25px; margin-bottom: 25px"
+        >
+          <div class="row">
+            <label
+              style="
+                margin-bottom: 0;
+                font-weight: 400;
+                font-size: 13px;
+                flex: 0 0 auto;
+              "
+              >Font</label
+            >
+            <select
+              id="fontFamily"
+              style="
+                flex: 1;
+                margin-left: 10px;
+                padding: 6px 9px;
+                font-size: 14px;
+              "
+            >
+              <option
+                value="'American Typewriter', 'Courier Prime', monospace"
+                selected
+              >
+                American Typewriter
+              </option>
+              <option value="'Courier New', monospace">Courier New</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="'Times New Roman', serif">Times New Roman</option>
+              <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+              <option value="Impact, fantasy">Impact</option>
+            </select>
+          </div>
+        </div>
+        <div class="control-group" style="margin-bottom: 20px">
+          <div style="display: flex; gap: 15px">
+            <div style="flex: 1">
+              <input type="color" id="bgColor" value="#E9E5CD" />
+              <div
+                style="
+                  text-align: center;
+                  margin-top: 5px;
+                  font-size: 12px;
+                  color: #666;
+                "
+              >
+                Margins
+              </div>
+            </div>
+            <div style="flex: 1">
+              <input type="color" id="cardColor" value="#F6F4E8" />
+              <div
+                style="
+                  text-align: center;
+                  margin-top: 5px;
+                  font-size: 12px;
+                  color: #666;
+                "
+              >
+                Card
+              </div>
+            </div>
+            <div style="flex: 1">
+              <input type="color" id="dividerColor" value="#AFA86A" />
+              <div
+                style="
+                  text-align: center;
+                  margin-top: 5px;
+                  font-size: 12px;
+                  color: #666;
+                "
+              >
+                Dividers
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="control-group" style="margin-top: 8px">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <label
+              for="showDividers"
+              style="
+                margin-bottom: 0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+              "
+              >Show Dividers</label
+            >
+            <label
+              for="showDividers"
+              class="toggle-switch"
+              style="
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                margin-top: 4px;
+              "
+            >
+              <input type="checkbox" id="showDividers" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div
+          class="control-group"
+          style="margin-top: 15px; margin-bottom: 15px"
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <label
+              for="enableColoredBorders"
+              style="
+                margin-bottom: 0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+              "
+              >Show Flag</label
+            >
+            <label
+              for="enableColoredBorders"
+              class="toggle-switch"
+              style="
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                margin-top: 4px;
+              "
+            >
+              <input type="checkbox" id="enableColoredBorders" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="control-group" style="margin-top: 15px; margin-bottom: 0px">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <label
+              for="darkBackgroundToggle"
+              style="
+                margin-bottom: 0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+              "
+              >Dark Background</label
+            >
+            <label
+              for="darkBackgroundToggle"
+              class="toggle-switch"
+              style="
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                margin-top: 4px;
+              "
+            >
+              <input type="checkbox" id="darkBackgroundToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Background Image Section -->
+      <div class="control-section">
+        <h2>Background Image</h2>
+        <div class="section-actions image-actions">
+          <button
+            type="button"
+            id="openaiImageButton"
+            class="openai-secondary-btn"
+            title="Generate background with OpenAI"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3V21M3 12H21"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="openai-spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="control-group" style="margin-bottom: 25px">
+          <input
+            type="file"
+            id="bgImageInput"
+            accept="image/*"
+            style="display: none"
+          />
+          <button
+            type="button"
+            id="bgImageButton"
+            class="save-template-btn"
+            style="
+              width: 100%;
+              padding: 10px;
+              background: white;
+              color: #4facfe;
+              border: 1px solid #4facfe;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+            "
+          >
+            <svg
+              id="bgImageIcon"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M14 10V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V10"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M11.3333 5.33333L8 2L4.66667 5.33333"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8 2V10"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span id="bgImageText">Choose Image</span>
+          </button>
+        </div>
+        <div class="image-generation-panel" id="generatorImagePanel"></div>
+        <div class="control-group">
+          <div class="slider-label">
+            <span class="slider-label-text">Opacity</span>
+          </div>
+          <div class="slider-container">
+            <div class="slider-wrapper">
+              <input
+                type="range"
+                id="bgImageOpacity"
+                class="slider-input"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.3"
+              />
+            </div>
+            <input
+              type="text"
+              id="bgImageOpacityValue"
+              class="slider-value-input"
+              value="30%"
+            />
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="slider-label">
+            <span class="slider-label-text">Zoom</span>
+          </div>
+          <div class="slider-container">
+            <div class="slider-wrapper">
+              <input
+                type="range"
+                id="bgImageZoom"
+                class="slider-input"
+                min="1"
+                max="3"
+                step="0.1"
+                value="1"
+              />
+            </div>
+            <input
+              type="text"
+              id="bgImageZoomValue"
+              class="slider-value-input"
+              value="100%"
+            />
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="slider-label">
+            <span class="slider-label-text">Rotation</span>
+          </div>
+          <div class="slider-container">
+            <div class="slider-wrapper">
+              <input
+                type="range"
+                id="bgImageRotate"
+                class="slider-input"
+                min="0"
+                max="360"
+                step="1"
+                value="0"
+              />
+            </div>
+            <input
+              type="text"
+              id="bgImageRotateValue"
+              class="slider-value-input"
+              value="0°"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Template Management Section -->
+      <div class="control-section">
+        <h2>Templates</h2>
+        <div class="control-group">
+          <div style="display: flex; gap: 10px; align-items: center">
+            <input
+              type="text"
+              id="templateName"
+              placeholder="template name..."
+              style="flex: 1; font-size: 16px"
+            />
+            <button
+              onclick="saveTemplate()"
+              class="template-btn apply-btn"
+              style="
+                width: 39px;
+                height: 39px;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+              title="Save"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M13.5 4L6 11.5L2.5 8"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="control-group">
+          <div id="templateList" style="margin-top: 10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fixed Toolbar -->
+    <div class="fixed-toolbar">
+      <button
+        onclick="showSocialPreview()"
+        class="main-action-btn preview-btn"
+        style="
+          background: linear-gradient(135deg, #4facfe 0%, #4facfe 100%);
+          color: white;
+          border: none;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border-radius: 6px;
+          padding: 10px 16px;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          flex: 1;
+        "
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 5C7 5 2.73 8.11 1 12.5C2.73 16.89 7 20 12 20C17 20 21.27 16.89 23 12.5C21.27 8.11 17 5 12 5Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle
+            cx="12"
+            cy="12.5"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+        </svg>
+        Preview
+      </button>
+      <button
+        onclick="resetEverything()"
+        class="main-action-btn reset-btn"
+        style="
+          background: linear-gradient(135deg, #4facfe 0%, #4facfe 100%);
+          color: white;
+          border: none;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border-radius: 6px;
+          padding: 10px 16px;
+          box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          flex: 1;
+        "
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M3 6H21"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M8 6V4C8 3.44772 8.44772 3 9 3H15C15.5523 3 16 3.44772 16 4V6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M19 6V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M10 11V16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M14 11V16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        Reset
+      </button>
+      <button
+        onclick="exportCard()"
+        class="main-action-btn export-btn"
+        style="
+          background: linear-gradient(135deg, #4facfe 0%, #4facfe 100%);
+          color: white;
+          border: none;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border-radius: 6px;
+          padding: 10px 16px;
+          box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          flex: 1;
+        "
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 3V15"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M7 10L12 15L17 10"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Export
+      </button>
+    </div>
+
+    <div class="preview">
+      <div class="canvas-wrapper">
+        <canvas id="canvas"></canvas>
+        <div class="resize-handle" id="resizeHandle"></div>
+        <div class="dimension-label" id="dimensionLabel"></div>
+      </div>
+    </div>
+
+    <!-- Flying Pig -->
+    <div class="flying-pig" id="flyingPig">
+      <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Left Wing -->
+        <g class="wing-left">
+          <ellipse
+            cx="30"
+            cy="45"
+            rx="18"
+            ry="28"
+            fill="#FFE6F0"
+            stroke="#FFB3D9"
+            stroke-width="2"
+            opacity="0.9"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              values="0 30 45; -30 30 45; 0 30 45"
+              dur="0.4s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+        </g>
+
+        <!-- Right Wing -->
+        <g class="wing-right">
+          <ellipse
+            cx="90"
+            cy="45"
+            rx="18"
+            ry="28"
+            fill="#FFE6F0"
+            stroke="#FFB3D9"
+            stroke-width="2"
+            opacity="0.9"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              values="0 90 45; 30 90 45; 0 90 45"
+              dur="0.4s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+        </g>
+
+        <!-- Body (smaller) -->
+        <ellipse
+          cx="60"
+          cy="50"
+          rx="28"
+          ry="22"
+          fill="#FFB3D9"
+          stroke="#FF8AC9"
+          stroke-width="2"
+        />
+
+        <!-- Head (smaller) -->
+        <circle
+          cx="60"
+          cy="35"
+          r="18"
+          fill="#FFB3D9"
+          stroke="#FF8AC9"
+          stroke-width="2"
+        />
+
+        <!-- Snout -->
+        <ellipse cx="60" cy="42" rx="10" ry="7" fill="#FF8AC9" />
+        <circle cx="57" cy="42" r="2" fill="#8B4513" />
+        <circle cx="63" cy="42" r="2" fill="#8B4513" />
+
+        <!-- Eyes -->
+        <circle cx="53" cy="30" r="2.5" fill="#000" />
+        <circle cx="67" cy="30" r="2.5" fill="#000" />
+        <circle cx="54" cy="29" r="1.2" fill="#FFF" />
+        <circle cx="68" cy="29" r="1.2" fill="#FFF" />
+
+        <!-- Ears -->
+        <ellipse
+          cx="48"
+          cy="22"
+          rx="4"
+          ry="7"
+          fill="#FFB3D9"
+          stroke="#FF8AC9"
+          stroke-width="1.5"
+          transform="rotate(-20 48 22)"
+        />
+        <ellipse
+          cx="72"
+          cy="22"
+          rx="4"
+          ry="7"
+          fill="#FFB3D9"
+          stroke="#FF8AC9"
+          stroke-width="1.5"
+          transform="rotate(20 72 22)"
+        />
+
+        <!-- Legs (smaller) -->
+        <rect
+          x="50"
+          y="66"
+          width="5"
+          height="12"
+          rx="2.5"
+          fill="#FFB3D9"
+          stroke="#FF8AC9"
+          stroke-width="1.5"
+        />
+        <rect
+          x="65"
+          y="66"
+          width="5"
+          height="12"
+          rx="2.5"
+          fill="#FFB3D9"
+          stroke="#FF8AC9"
+          stroke-width="1.5"
+        />
+
+        <!-- Tail (curly) -->
+        <path
+          d="M 85 52 Q 92 50, 92 45 Q 92 40, 87 38"
+          fill="none"
+          stroke="#FF8AC9"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+
+        <!-- Smile -->
+        <path
+          d="M 55 45 Q 60 47, 65 45"
+          fill="none"
+          stroke="#8B4513"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </div>
+
+    <!-- Social Media Preview Modal -->
+    <div class="preview-modal" id="socialPreviewModal">
+      <div class="preview-modal-content">
+        <div class="preview-modal-header">
+          <h2>Social Media Preview</h2>
+          <button class="close-preview" onclick="closeSocialPreview()">
+            ×
+          </button>
+        </div>
+        <div class="preview-modal-body">
+          <!-- Facebook Preview -->
+          <div class="social-preview">
+            <div class="social-preview-header">
+              <div class="social-icon facebook-icon">f</div>
+              <div class="social-preview-info">
+                <h3>User Name</h3>
+                <p>Just now · 🌎</p>
+              </div>
+            </div>
+            <div class="social-preview-text">
+              Check out this inspiring quote!
+            </div>
+            <img
+              class="social-preview-image facebook-preview-image"
+              id="fbPreviewImage"
+              alt="Facebook Preview"
+            />
+          </div>
+
+          <!-- Twitter Preview -->
+          <div class="social-preview">
+            <div class="social-preview-header">
+              <div class="social-icon twitter-icon">𝕏</div>
+              <div class="social-preview-info">
+                <h3>User Name</h3>
+                <p>@yourhandle · now</p>
+              </div>
+            </div>
+            <div class="social-preview-text">
+              Check out this inspiring quote!
+            </div>
+            <img
+              class="social-preview-image twitter-preview-image"
+              id="twitterPreviewImage"
+              alt="Twitter Preview"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
