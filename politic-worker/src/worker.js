@@ -89,9 +89,10 @@ const PAGE = `<!doctype html>
 <html lang="ro">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>Politic - Viva Forever</title>
+  <title>Generator de articole</title>
+  <script>try { if (localStorage.getItem('politic_password')) document.documentElement.classList.add('hasSavedPassword'); } catch (_) {}</script>
   <style>
     :root { color-scheme: dark; --bg:#101114; --card:#17191f; --text:#eee; --muted:#aab; --line:#2a2d36; --accent:#d6b35a; --bad:#e06c75; }
     * { box-sizing:border-box; }
@@ -101,6 +102,7 @@ const PAGE = `<!doctype html>
     h2 { margin:0 0 12px; }
     .muted { color:var(--muted); }
     .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+    .hasSavedPassword #login { display:none; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
     textarea { min-height:54px; resize:none; overflow:hidden; padding-right:58px; }
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
@@ -220,7 +222,12 @@ async function login() {
     $('app').style.display = '';
     await refreshJobs();
     timer = setInterval(tick, 5000);
-  } catch (e) { $('loginErr').textContent = 'Parolă greșită sau API indisponibil.'; }
+  } catch (e) {
+    document.documentElement.classList.remove('hasSavedPassword');
+    $('app').style.display = 'none';
+    $('login').style.display = '';
+    $('loginErr').textContent = 'Parolă greșită sau API indisponibil.';
+  }
 }
 
 async function createJob() {
