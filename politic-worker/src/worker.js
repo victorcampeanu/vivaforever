@@ -112,6 +112,7 @@ const PAGE = `<!doctype html>
     .sidebarCard { padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; }
     .sidebarCard h2 { padding:18px 14px 12px; margin:0; }
     .content { padding:28px 18px 60px; max-width:940px; width:100%; margin:0 auto; }
+    .pageTitle { max-width:760px; width:100%; margin:0 auto 18px; }
     .compose { margin-bottom:18px; }
     .content.emptyMode { min-height:calc(100vh - 118px); display:flex; flex-direction:column; justify-content:center; }
     .content.emptyMode .compose { max-width:760px; width:100%; margin:0 auto; }
@@ -139,7 +140,6 @@ const PAGE = `<!doctype html>
 </head>
 <body>
 <main>
-  <h1>Generator de articole</h1>
 
   <section id="login" class="card">
     <h2>Acces</h2>
@@ -158,6 +158,7 @@ const PAGE = `<!doctype html>
       </aside>
 
       <section id="content" class="content emptyMode">
+        <h1 class="pageTitle">Generator de articole</h1>
         <div class="card compose">
           <h2>Subiect nou</h2>
           <div class="inputWrap">
