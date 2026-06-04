@@ -140,7 +140,8 @@ const PAGE = `<!doctype html>
     .jobMain { min-width:0; }
     .jobTitle { display:block; font-weight:650; line-height:1.25; }
     .jobSubject { display:block; margin-top:4px; font-size:13px; color:rgba(238,238,238,.5); line-height:1.3; }
-    .jobActions { position:relative; }
+    .jobActions { position:relative; opacity:0; pointer-events:none; transition:opacity .12s ease; }
+    .job:hover .jobActions, .job:focus-within .jobActions, .job.menuOpen .jobActions { opacity:1; pointer-events:auto; }
     .jobActionBtn { width:28px; height:28px; padding:0; margin:0; border-radius:8px; color:rgba(238,238,238,.55); background:transparent; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; }
     .jobActionBtn:hover { background:#2a2d36; color:var(--text); }
     .jobMenu { position:absolute; top:30px; right:0; min-width:104px; padding:6px; border:1px solid var(--line); border-radius:10px; background:#17191f; box-shadow:0 12px 40px rgba(0,0,0,.34); z-index:5; }
@@ -288,7 +289,10 @@ async function refreshJobs() {
     const id = btn.dataset.actionId;
     document.querySelectorAll('.jobMenu').forEach(menu => { if (menu.dataset.menuId !== id) menu.hidden = true; });
     const menu = document.querySelector('.jobMenu[data-menu-id="' + CSS.escape(id) + '"]');
-    if (menu) menu.hidden = !menu.hidden;
+    if (menu) {
+      menu.hidden = !menu.hidden;
+      btn.closest('.job')?.classList.toggle('menuOpen', !menu.hidden);
+    }
   });
   document.querySelectorAll('.deleteJobBtn').forEach(btn => btn.onclick = (e) => {
     e.stopPropagation();
