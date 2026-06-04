@@ -150,6 +150,16 @@ const PAGE = `<!doctype html>
     .jobMenu[hidden] { display:none; }
     .deleteJobBtn { width:100%; margin:0; padding:8px 10px; border-radius:8px; background:transparent; color:var(--bad); text-align:left; font-size:14px; font-weight:600; }
     .deleteJobBtn:hover { background:rgba(224,108,117,.12); }
+    .articleTop { display:grid; grid-template-columns:minmax(0,1fr) 32px; align-items:start; gap:10px; }
+    .articleActions { position:relative; }
+    .articleActionBtn { width:32px; height:32px; padding:0; margin:0; border-radius:9px; color:rgba(238,238,238,.7); background:#111318; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
+    .articleActionBtn:hover { background:#242833; color:var(--text); }
+    .articleMenu { position:absolute; top:36px; right:0; min-width:150px; padding:6px; border:1px solid var(--line); border-radius:10px; background:#17191f; box-shadow:0 12px 40px rgba(0,0,0,.34); z-index:10; }
+    .articleMenu[hidden] { display:none; }
+    .articleMenu button { width:100%; margin:0; padding:8px 10px; border-radius:8px; background:transparent; color:var(--text); text-align:left; font-size:14px; font-weight:600; }
+    .articleMenu button:hover { background:#242833; }
+    .articleMenu button.danger { color:var(--bad); }
+    .articleMenu button.danger:hover { background:rgba(224,108,117,.12); }
     .status { display:inline-block; padding:2px 8px; border-radius:999px; background:#2a2d36; font-size:13px; white-space:nowrap; }
     .error { color:var(--bad); white-space:pre-wrap; }
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
@@ -229,7 +239,17 @@ const PAGE = `<!doctype html>
         <div class="card" id="viewer">
           <div id="emptyViewer" class="emptyViewer">Selectează un articol din stânga sau creează unul nou.</div>
           <div id="articleContent" style="display:none">
-            <div class="row"><h2 id="articleTitle">Articol</h2></div>
+            <div class="articleTop">
+              <h2 id="articleTitle">Articol</h2>
+              <div class="articleActions">
+                <button id="articleActionBtn" class="articleActionBtn" title="Actions" aria-label="Actions">⋯</button>
+                <div id="articleMenu" class="articleMenu" hidden>
+                  <button id="copyArticleTextBtn">Copiază text</button>
+                  <button id="copyArticleTitleBtn">Copiază titlu</button>
+                  <button id="deleteArticleBtn" class="danger">Șterge</button>
+                </div>
+              </div>
+            </div>
             <div id="articleMeta" class="muted"></div>
             <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
             <div id="articleError" class="error"></div>
@@ -244,6 +264,7 @@ const PAGE = `<!doctype html>
 const $ = (id) => document.getElementById(id);
 let password = localStorage.getItem('politic_password') || '';
 let selectedId = null;
+let currentJob = null;
 let timer = null;
 
 function headers() { return {'content-type':'application/json', 'x-politic-password': password}; }
@@ -252,6 +273,23 @@ async function api(path, opts={}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || res.statusText);
   return data;
+}
+async function copyToClipboard(text) {
+  const value = text || '';
+  if (!value) return;
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const el = document.createElement('textarea');
+  el.value = value;
+  el.style.position = 'fixed';
+  el.style.opacity = '0';
+  document.body.appendChild(el);
+  el.focus();
+  el.select();
+  document.execCommand('copy');
+  el.remove();
 }
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function estimatedDoneText(job) {
@@ -362,6 +400,7 @@ async function refreshJobs() {
 }
 
 function clearViewer() {
+  currentJob = null;
   $('content').classList.add('emptyMode');
   $('emptyViewer').style.display = '';
   $('articleContent').style.display = 'none';
@@ -369,6 +408,7 @@ function clearViewer() {
   $('articleMeta').textContent = '';
   $('articleError').textContent = '';
   $('articleBody').textContent = '';
+  $('articleMenu').hidden = true;
   $('articleImage').removeAttribute('src');
   $('articleImage').style.display = 'none';
   updateMobileBackButton();
@@ -376,7 +416,7 @@ function clearViewer() {
 
 async function deleteJob(id) {
   if (!id) return;
-  if (!confirm('Delete this article?')) return;
+  if (!confirm('Ștergi acest articol?')) return;
   await api('/api/jobs/' + encodeURIComponent(id), { method:'DELETE' });
   if (selectedId === id) {
     selectedId = null;
@@ -387,6 +427,7 @@ async function deleteJob(id) {
 
 async function loadJob(id) {
   const job = await api('/api/jobs/' + encodeURIComponent(id));
+  currentJob = job;
   $('content').classList.remove('emptyMode');
   $('emptyViewer').style.display = 'none';
   $('articleContent').style.display = '';
@@ -401,6 +442,26 @@ async function loadJob(id) {
   updateMobileBackButton();
 }
 
+function toggleArticleMenu() {
+  const menu = $('articleMenu');
+  menu.hidden = !menu.hidden;
+}
+
+async function copyArticleText() {
+  await copyToClipboard(currentJob?.article_text || $('articleBody').textContent || '');
+  $('articleMenu').hidden = true;
+}
+
+async function copyArticleTitle() {
+  await copyToClipboard(currentJob?.title || currentJob?.subject || $('articleTitle').textContent || '');
+  $('articleMenu').hidden = true;
+}
+
+async function deleteCurrentArticle() {
+  $('articleMenu').hidden = true;
+  if (selectedId) await deleteJob(selectedId);
+}
+
 async function tick() {
   try {
     await refreshJobs();
@@ -413,6 +474,10 @@ $('goBtn').onclick = createJob;
 $('mobileSidebarBtn').onclick = openSidebar;
 $('sidebarBackdrop').onclick = closeSidebar;
 $('mobileBackBtn').onclick = showComposer;
+$('articleActionBtn').onclick = toggleArticleMenu;
+$('copyArticleTextBtn').onclick = copyArticleText;
+$('copyArticleTitleBtn').onclick = copyArticleTitle;
+$('deleteArticleBtn').onclick = deleteCurrentArticle;
 $('subject').addEventListener('input', autoResizeSubject);
 $('subject').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) createJob(); });
 document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; autoResizeSubject(); $('subject').focus(); });
