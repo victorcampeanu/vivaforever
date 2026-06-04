@@ -202,7 +202,7 @@ async function loadJob(id) {
   $('viewer').style.display = '';
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
   $('articleStatus').textContent = job.status;
-  $('articleMeta').textContent = [job.created_at, job.completed_at ? 'gata: ' + job.completed_at : ''].filter(Boolean).join(' | ');
+  $('articleMeta').textContent = '';
   $('articleError').textContent = job.error || '';
   $('articleBody').textContent = job.article_text || (job.status === 'done' ? '' : 'Încă se generează... pagina se actualizează automat.');
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
