@@ -96,23 +96,32 @@ const PAGE = `<!doctype html>
     :root { color-scheme: dark; --bg:#101114; --card:#17191f; --text:#eee; --muted:#aab; --line:#2a2d36; --accent:#d6b35a; --bad:#e06c75; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
-    main { max-width:960px; margin:0 auto; padding:32px 18px 60px; }
-    h1 { margin:0 0 6px; font-size:28px; }
+    main { max-width:1240px; margin:0 auto; padding:28px 18px 60px; }
+    h1 { margin:0 0 18px; font-size:28px; }
+    h2 { margin:0 0 12px; }
     .muted { color:var(--muted); }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin:18px 0; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
     textarea { min-height:110px; resize:vertical; }
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
     button:disabled { opacity:.55; cursor:not-allowed; }
-    .row { display:grid; grid-template-columns: 1fr 160px; gap:10px; }
-    .job { padding:12px; border-bottom:1px solid var(--line); cursor:pointer; }
+    .layout { display:grid; grid-template-columns:320px minmax(0,1fr); gap:18px; align-items:start; }
+    .sidebar { position:sticky; top:18px; max-height:calc(100vh - 36px); overflow:auto; }
+    .compose { margin-bottom:18px; }
+    .row { display:grid; grid-template-columns: 1fr auto; align-items:start; gap:10px; }
+    .jobsList { display:flex; flex-direction:column; gap:8px; }
+    .job { padding:12px; border:1px solid var(--line); border-radius:12px; cursor:pointer; background:#111318; transition:background .15s,border-color .15s; }
     .job:hover { background:#1d2028; }
-    .status { display:inline-block; padding:2px 8px; border-radius:999px; background:#2a2d36; font-size:13px; }
+    .job.active { border-color:var(--accent); background:#242116; }
+    .jobTitle { display:block; font-weight:700; line-height:1.25; }
+    .jobSubject { display:block; margin-top:4px; font-size:13px; color:var(--muted); line-height:1.3; }
+    .status { display:inline-block; padding:2px 8px; border-radius:999px; background:#2a2d36; font-size:13px; white-space:nowrap; }
     .error { color:var(--bad); white-space:pre-wrap; }
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
     img.hero { max-width:100%; border-radius:12px; border:1px solid var(--line); margin:12px 0; }
     a { color:var(--accent); }
-    @media (max-width:700px) { .row { grid-template-columns:1fr; } }
+    .emptyViewer { color:var(--muted); font-size:18px; padding:42px; text-align:center; }
+    @media (max-width:850px) { main { padding-top:18px; } .layout { grid-template-columns:1fr; } .sidebar { position:static; max-height:none; } .row { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -127,24 +136,33 @@ const PAGE = `<!doctype html>
   </section>
 
   <section id="app" style="display:none">
-    <div class="card">
-      <h2>Subiect nou</h2>
-      <textarea id="subject" maxlength="500" placeholder="Scrie subiectul articolului..."></textarea>
-      <button id="goBtn">Go</button>
-      <div id="createMsg" class="muted"></div>
-    </div>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="card">
+          <h2>Articole</h2>
+          <div id="jobs" class="jobsList muted">Se încarcă...</div>
+        </div>
+      </aside>
 
-    <div class="card">
-      <h2>Articole</h2>
-      <div id="jobs" class="muted">Se încarcă...</div>
-    </div>
+      <section class="content">
+        <div class="card compose">
+          <h2>Subiect nou</h2>
+          <textarea id="subject" maxlength="500" placeholder="Scrie subiectul articolului..."></textarea>
+          <button id="goBtn">Go</button>
+          <div id="createMsg" class="muted"></div>
+        </div>
 
-    <div class="card" id="viewer" style="display:none">
-      <div class="row"><h2 id="articleTitle">Articol</h2><div><span id="articleStatus" class="status"></span></div></div>
-      <div id="articleMeta" class="muted"></div>
-      <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
-      <div id="articleError" class="error"></div>
-      <article id="articleBody"></article>
+        <div class="card" id="viewer">
+          <div id="emptyViewer" class="emptyViewer">Selectează un articol din stânga sau creează unul nou.</div>
+          <div id="articleContent" style="display:none">
+            <div class="row"><h2 id="articleTitle">Articol</h2><div><span id="articleStatus" class="status"></span></div></div>
+            <div id="articleMeta" class="muted"></div>
+            <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
+            <div id="articleError" class="error"></div>
+            <article id="articleBody"></article>
+          </div>
+        </div>
+      </section>
     </div>
   </section>
 </main>
@@ -193,13 +211,19 @@ async function createJob() {
 async function refreshJobs() {
   const data = await api('/api/jobs');
   const jobs = data.jobs || [];
-  $('jobs').innerHTML = jobs.length ? jobs.map(j => '<div class="job" data-id="' + escapeHtml(j.id) + '"><b>' + escapeHtml(j.title || j.subject) + '</b><br><span class="status">' + escapeHtml(j.status) + '</span> <span class="muted">' + escapeHtml(j.created_at || '') + '</span></div>').join('') : 'Niciun articol încă.';
-  document.querySelectorAll('.job').forEach(el => el.onclick = () => { selectedId = el.dataset.id; loadJob(selectedId); });
+  $('jobs').innerHTML = jobs.length ? jobs.map(j => {
+    const active = selectedId === j.id ? ' active' : '';
+    const title = escapeHtml(j.title || j.subject);
+    const subject = j.title && j.subject && j.title !== j.subject ? '<span class="jobSubject">' + escapeHtml(j.subject) + '</span>' : '';
+    return '<div class="job' + active + '" data-id="' + escapeHtml(j.id) + '"><span class="jobTitle">' + title + '</span>' + subject + '<span class="status">' + escapeHtml(j.status) + '</span></div>';
+  }).join('') : 'Niciun articol încă.';
+  document.querySelectorAll('.job').forEach(el => el.onclick = () => { selectedId = el.dataset.id; loadJob(selectedId); refreshJobs(); });
 }
 
 async function loadJob(id) {
   const job = await api('/api/jobs/' + encodeURIComponent(id));
-  $('viewer').style.display = '';
+  $('emptyViewer').style.display = 'none';
+  $('articleContent').style.display = '';
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
   $('articleStatus').textContent = job.status;
   $('articleMeta').textContent = '';
