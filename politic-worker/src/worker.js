@@ -133,7 +133,7 @@ const PAGE = `<!doctype html>
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
     img.hero { max-width:100%; border-radius:12px; border:1px solid var(--line); margin:12px 0; }
     a { color:var(--accent); }
-    .emptyViewer { color:var(--muted); font-size:18px; padding:42px; text-align:center; }
+    .waitingText { color:rgba(238,238,238,.5); font-size:16px; }
     @media (max-width:850px) { main { padding-top:0; } .layout { grid-template-columns:1fr; } .sidebar { position:static; height:auto; max-height:260px; border-right:0; border-bottom:1px solid var(--line); } .content { padding:18px; } .row { grid-template-columns:1fr; } .content.emptyMode { min-height:auto; } .examples { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -258,6 +258,7 @@ async function loadJob(id) {
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
   const waitingText = job.status === 'done' ? '' : 'Încă se generează... timp estimat aproximativ: 7 minute. Pagina se actualizează automat.';
+  $('articleBody').className = job.article_text ? '' : (waitingText ? 'waitingText' : '');
   $('articleBody').textContent = job.article_text || waitingText;
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
