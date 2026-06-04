@@ -138,7 +138,7 @@ const PAGE = `<!doctype html>
     .job:hover { background:#1d2028; }
     .job.active { border-color:var(--line); background:#242116; box-shadow:inset 3px 0 0 var(--accent); }
     .jobTitle { display:block; font-weight:650; line-height:1.25; }
-    .jobSubject { display:block; margin-top:4px; font-size:13px; color:rgba(238,238,238,.7); line-height:1.3; }
+    .jobSubject { display:block; margin-top:4px; font-size:13px; color:rgba(238,238,238,.5); line-height:1.3; }
     .status { display:inline-block; padding:2px 8px; border-radius:999px; background:#2a2d36; font-size:13px; white-space:nowrap; }
     .error { color:var(--bad); white-space:pre-wrap; }
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
