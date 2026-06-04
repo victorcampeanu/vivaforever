@@ -228,6 +228,10 @@ if (password) { $('password').value = password; login(); }
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.hostname.endsWith(".workers.dev")) {
+      url.hostname = "politic.vivaforever.ro";
+      return Response.redirect(url.toString(), 301);
+    }
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders(request) });
 
     if (url.pathname === "/" || url.pathname === "/index.html") return html(PAGE);
