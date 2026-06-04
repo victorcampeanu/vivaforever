@@ -117,8 +117,7 @@ const PAGE = `<!doctype html>
 </head>
 <body>
 <main>
-  <h1>Politic - generator manual</h1>
-  <div class="muted">Pagină privată, noindex. Articole generate de profilul Hermes <code>political_analyst</code>.</div>
+  <h1>Generator de articole</h1>
 
   <section id="login" class="card">
     <h2>Acces</h2>
@@ -136,7 +135,7 @@ const PAGE = `<!doctype html>
     </div>
 
     <div class="card">
-      <h2>History</h2>
+      <h2>Articole</h2>
       <div id="jobs" class="muted">Se încarcă...</div>
     </div>
 
