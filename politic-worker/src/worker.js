@@ -102,9 +102,11 @@ const PAGE = `<!doctype html>
     .muted { color:var(--muted); }
     .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
-    textarea { min-height:110px; resize:vertical; }
+    textarea { min-height:54px; max-height:260px; resize:none; overflow:hidden; padding-right:58px; }
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
     button:disabled { opacity:.55; cursor:not-allowed; }
+    .inputWrap { position:relative; }
+    .sendBtn { position:absolute; right:10px; bottom:10px; width:36px; height:36px; padding:0; margin:0; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
     .layout { display:grid; grid-template-columns:320px minmax(0,1fr); gap:18px; align-items:start; }
     .sidebar { position:sticky; top:18px; max-height:calc(100vh - 36px); overflow:auto; }
     .sidebarCard { padding:0; overflow:hidden; }
@@ -157,8 +159,10 @@ const PAGE = `<!doctype html>
       <section id="content" class="content emptyMode">
         <div class="card compose">
           <h2>Subiect nou</h2>
-          <textarea id="subject" maxlength="500" placeholder="Scrie subiectul articolului..."></textarea>
-          <button id="goBtn">Go</button>
+          <div class="inputWrap">
+            <textarea id="subject" maxlength="500" placeholder="Scrie subiectul articolului..."></textarea>
+            <button id="goBtn" class="sendBtn" title="Generează" aria-label="Generează">↑</button>
+          </div>
           <div id="createMsg" class="muted"></div>
           <div class="examples" id="examples">
             <div class="example" data-example="Subiect: pensiile speciale ale magistraților\n\nUnghi: Nu e o discuție despre invidia față de profesii bine plătite, ci despre contractul rupt dintre stat și cetățean. Când statul cere austeritate de la oamenii obișnuiți, nu poate apăra privilegii greu de justificat.\n\nTon: ferm, civic-conservator, pe înțelesul oamenilor, fără limbaj tehnocratic.\n\nLimite: fără atacuri personale, fără exagerări, fără clișee populiste."><b>Pensii speciale</b>Contractul rupt dintre stat și cetățean.</div>
@@ -196,6 +200,13 @@ async function api(path, opts={}) {
   return data;
 }
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function autoResizeSubject() {
+  const el = $('subject');
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 260) + 'px';
+  el.style.overflowY = el.scrollHeight > 260 ? 'auto' : 'hidden';
+}
 
 async function login() {
   password = $('password').value || password;
@@ -217,6 +228,7 @@ async function createJob() {
   try {
     const job = await api('/api/jobs', {method:'POST', body:JSON.stringify({subject})});
     $('subject').value = '';
+    autoResizeSubject();
     selectedId = job.id;
     await refreshJobs();
     await loadJob(job.id);
@@ -259,7 +271,9 @@ async function tick() {
 
 $('loginBtn').onclick = login;
 $('goBtn').onclick = createJob;
-document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; $('subject').focus(); });
+$('subject').addEventListener('input', autoResizeSubject);
+$('subject').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) createJob(); });
+document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; autoResizeSubject(); $('subject').focus(); });
 $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 if (password) { $('password').value = password; login(); }
 </script>
