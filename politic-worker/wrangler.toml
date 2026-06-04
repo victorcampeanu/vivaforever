@@ -1,0 +1,16 @@
+name = "vivaforever-politic"
+main = "src/worker.js"
+compatibility_date = "2026-06-01"
+
+routes = [
+  { pattern = "politic.vivaforever.ro/*", zone_name = "vivaforever.ro" }
+]
+
+[[kv_namespaces]]
+binding = "POLITIC_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+# Set real values with wrangler secrets, not here:
+# wrangler secret put APP_PASSWORD
+# wrangler secret put HERMES_SHARED_SECRET
