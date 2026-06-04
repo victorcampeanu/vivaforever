@@ -40,7 +40,7 @@ function corsHeaders(request) {
   if (origin === "https://politic.vivaforever.ro") {
     return {
       "access-control-allow-origin": origin,
-      "access-control-allow-methods": "GET,POST,OPTIONS",
+      "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
       "access-control-allow-headers": "content-type,authorization,x-politic-password",
       "access-control-max-age": "86400",
     };
@@ -134,11 +134,19 @@ const PAGE = `<!doctype html>
     .example b { display:block; color:var(--accent); margin-bottom:4px; }
     .row { display:grid; grid-template-columns: 1fr auto; align-items:start; gap:10px; }
     .jobsList { display:flex; flex-direction:column; gap:0; }
-    .job { padding:10px 12px; border:0; border-top:1px solid var(--line); border-radius:0; cursor:pointer; background:transparent; transition:background .15s,border-color .15s; }
+    .job { position:relative; display:grid; grid-template-columns:minmax(0,1fr) 28px; gap:8px; align-items:start; padding:10px 8px 10px 12px; border:0; border-top:1px solid var(--line); border-radius:0; cursor:pointer; background:transparent; transition:background .15s,border-color .15s; }
     .job:hover { background:#1d2028; }
     .job.active { border-color:var(--line); background:#242116; box-shadow:inset 3px 0 0 var(--accent); }
+    .jobMain { min-width:0; }
     .jobTitle { display:block; font-weight:650; line-height:1.25; }
     .jobSubject { display:block; margin-top:4px; font-size:13px; color:rgba(238,238,238,.5); line-height:1.3; }
+    .jobActions { position:relative; }
+    .jobActionBtn { width:28px; height:28px; padding:0; margin:0; border-radius:8px; color:rgba(238,238,238,.55); background:transparent; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; }
+    .jobActionBtn:hover { background:#2a2d36; color:var(--text); }
+    .jobMenu { position:absolute; top:30px; right:0; min-width:104px; padding:6px; border:1px solid var(--line); border-radius:10px; background:#17191f; box-shadow:0 12px 40px rgba(0,0,0,.34); z-index:5; }
+    .jobMenu[hidden] { display:none; }
+    .deleteJobBtn { width:100%; margin:0; padding:8px 10px; border-radius:8px; background:transparent; color:var(--bad); text-align:left; font-size:14px; font-weight:600; }
+    .deleteJobBtn:hover { background:rgba(224,108,117,.12); }
     .status { display:inline-block; padding:2px 8px; border-radius:999px; background:#2a2d36; font-size:13px; white-space:nowrap; }
     .error { color:var(--bad); white-space:pre-wrap; }
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
@@ -262,13 +270,53 @@ async function refreshJobs() {
   const jobs = data.jobs || [];
   $('jobs').innerHTML = jobs.length ? jobs.map(j => {
     const active = selectedId === j.id ? ' active' : '';
+    const id = escapeHtml(j.id);
     const title = escapeHtml(j.title || j.subject);
     const subject = j.title && j.subject && j.title !== j.subject ? '<span class="jobSubject">' + escapeHtml(j.subject) + '</span>' : '';
     const statusLabel = (j.status === 'queued' || j.status === 'running') ? 'se generează' : j.status;
     const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(statusLabel) + '</span>';
-    return '<div class="job' + active + '" data-id="' + escapeHtml(j.id) + '"><span class="jobTitle">' + title + '</span>' + subject + status + '</div>';
+    return '<div class="job' + active + '" data-id="' + id + '"><div class="jobMain"><span class="jobTitle">' + title + '</span>' + subject + status + '</div><div class="jobActions"><button class="jobActionBtn" data-action-id="' + id + '" title="Actions" aria-label="Actions">⋯</button><div class="jobMenu" data-menu-id="' + id + '" hidden><button class="deleteJobBtn" data-delete-id="' + id + '">Delete</button></div></div></div>';
   }).join('') : 'Niciun articol încă.';
-  document.querySelectorAll('.job').forEach(el => el.onclick = () => { selectedId = el.dataset.id; loadJob(selectedId); refreshJobs(); });
+  document.querySelectorAll('.job').forEach(el => el.onclick = (e) => {
+    if (e.target.closest('.jobActions')) return;
+    selectedId = el.dataset.id;
+    loadJob(selectedId);
+    refreshJobs();
+  });
+  document.querySelectorAll('.jobActionBtn').forEach(btn => btn.onclick = (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.actionId;
+    document.querySelectorAll('.jobMenu').forEach(menu => { if (menu.dataset.menuId !== id) menu.hidden = true; });
+    const menu = document.querySelector('.jobMenu[data-menu-id="' + CSS.escape(id) + '"]');
+    if (menu) menu.hidden = !menu.hidden;
+  });
+  document.querySelectorAll('.deleteJobBtn').forEach(btn => btn.onclick = (e) => {
+    e.stopPropagation();
+    deleteJob(btn.dataset.deleteId);
+  });
+}
+
+function clearViewer() {
+  $('content').classList.add('emptyMode');
+  $('emptyViewer').style.display = '';
+  $('articleContent').style.display = 'none';
+  $('articleTitle').textContent = 'Articol';
+  $('articleMeta').textContent = '';
+  $('articleError').textContent = '';
+  $('articleBody').textContent = '';
+  $('articleImage').removeAttribute('src');
+  $('articleImage').style.display = 'none';
+}
+
+async function deleteJob(id) {
+  if (!id) return;
+  if (!confirm('Delete this article?')) return;
+  await api('/api/jobs/' + encodeURIComponent(id), { method:'DELETE' });
+  if (selectedId === id) {
+    selectedId = null;
+    clearViewer();
+  }
+  await refreshJobs();
 }
 
 async function loadJob(id) {
@@ -412,6 +460,14 @@ export default {
         const job = await loadJob(env, decodeURIComponent(match[1]));
         if (!job) return json({ error: "not found" }, 404, corsHeaders(request));
         return json(job, 200, corsHeaders(request));
+      }
+
+      if (match && request.method === "DELETE") {
+        const id = decodeURIComponent(match[1]);
+        const ids = await loadIndex(env);
+        await saveIndex(env, ids.filter((existingId) => existingId !== id));
+        await env.POLITIC_KV.delete(`${JOB_PREFIX}${id}`);
+        return json({ ok: true }, 200, corsHeaders(request));
       }
     }
 
