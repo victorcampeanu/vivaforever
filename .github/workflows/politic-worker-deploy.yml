@@ -1,0 +1,36 @@
+name: Deploy politic Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "politic-worker/**"
+      - ".github/workflows/politic-worker-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: politic-worker-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: politic-worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate Worker syntax
+        run: node --check src/worker.js
+
+      - name: Deploy to Cloudflare Workers
+        run: npx --yes wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

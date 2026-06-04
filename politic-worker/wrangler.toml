@@ -1,6 +1,7 @@
 name = "vivaforever-politic"
 main = "src/worker.js"
 compatibility_date = "2026-06-01"
+account_id = "b08f59e051256e59b3717f78bef3e79c"
 
 routes = [
   { pattern = "politic.vivaforever.ro/*", zone_name = "vivaforever.ro" }
