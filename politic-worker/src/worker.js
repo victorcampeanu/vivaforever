@@ -107,13 +107,15 @@ const PAGE = `<!doctype html>
     button:disabled { opacity:.55; cursor:not-allowed; }
     .layout { display:grid; grid-template-columns:320px minmax(0,1fr); gap:18px; align-items:start; }
     .sidebar { position:sticky; top:18px; max-height:calc(100vh - 36px); overflow:auto; }
+    .sidebarCard { padding:0; overflow:hidden; }
+    .sidebarCard h2 { padding:14px 14px 10px; margin:0; }
     .compose { margin-bottom:18px; }
     .row { display:grid; grid-template-columns: 1fr auto; align-items:start; gap:10px; }
-    .jobsList { display:flex; flex-direction:column; gap:8px; }
-    .job { padding:12px; border:1px solid var(--line); border-radius:12px; cursor:pointer; background:#111318; transition:background .15s,border-color .15s; }
+    .jobsList { display:flex; flex-direction:column; gap:0; }
+    .job { padding:10px 12px; border:0; border-top:1px solid var(--line); border-radius:0; cursor:pointer; background:transparent; transition:background .15s,border-color .15s; }
     .job:hover { background:#1d2028; }
-    .job.active { border-color:var(--accent); background:#242116; }
-    .jobTitle { display:block; font-weight:700; line-height:1.25; }
+    .job.active { border-color:var(--line); background:#242116; box-shadow:inset 3px 0 0 var(--accent); }
+    .jobTitle { display:block; font-weight:650; line-height:1.25; }
     .jobSubject { display:block; margin-top:4px; font-size:13px; color:var(--muted); line-height:1.3; }
     .status { display:inline-block; padding:2px 8px; border-radius:999px; background:#2a2d36; font-size:13px; white-space:nowrap; }
     .error { color:var(--bad); white-space:pre-wrap; }
@@ -138,7 +140,7 @@ const PAGE = `<!doctype html>
   <section id="app" style="display:none">
     <div class="layout">
       <aside class="sidebar">
-        <div class="card">
+        <div class="card sidebarCard">
           <h2>Articole</h2>
           <div id="jobs" class="jobsList muted">Se încarcă...</div>
         </div>
