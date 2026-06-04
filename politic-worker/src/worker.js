@@ -110,6 +110,14 @@ const PAGE = `<!doctype html>
     .sidebarCard { padding:0; overflow:hidden; }
     .sidebarCard h2 { padding:14px 14px 10px; margin:0; }
     .compose { margin-bottom:18px; }
+    .content.emptyMode { min-height:calc(100vh - 118px); display:flex; flex-direction:column; justify-content:center; }
+    .content.emptyMode .compose { max-width:760px; width:100%; margin:0 auto; }
+    .content.emptyMode #viewer { display:none; }
+    .examples { display:none; margin-top:16px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .content.emptyMode .examples { display:grid; }
+    .example { text-align:left; color:var(--text); background:#111318; border:1px solid var(--line); border-radius:12px; padding:12px; cursor:pointer; font-size:14px; line-height:1.35; }
+    .example:hover { border-color:var(--accent); background:#1d2028; }
+    .example b { display:block; color:var(--accent); margin-bottom:4px; }
     .row { display:grid; grid-template-columns: 1fr auto; align-items:start; gap:10px; }
     .jobsList { display:flex; flex-direction:column; gap:0; }
     .job { padding:10px 12px; border:0; border-top:1px solid var(--line); border-radius:0; cursor:pointer; background:transparent; transition:background .15s,border-color .15s; }
@@ -123,7 +131,7 @@ const PAGE = `<!doctype html>
     img.hero { max-width:100%; border-radius:12px; border:1px solid var(--line); margin:12px 0; }
     a { color:var(--accent); }
     .emptyViewer { color:var(--muted); font-size:18px; padding:42px; text-align:center; }
-    @media (max-width:850px) { main { padding-top:18px; } .layout { grid-template-columns:1fr; } .sidebar { position:static; max-height:none; } .row { grid-template-columns:1fr; } }
+    @media (max-width:850px) { main { padding-top:18px; } .layout { grid-template-columns:1fr; } .sidebar { position:static; max-height:none; } .row { grid-template-columns:1fr; } .content.emptyMode { min-height:auto; } .examples { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -146,12 +154,18 @@ const PAGE = `<!doctype html>
         </div>
       </aside>
 
-      <section class="content">
+      <section id="content" class="content emptyMode">
         <div class="card compose">
           <h2>Subiect nou</h2>
           <textarea id="subject" maxlength="500" placeholder="Scrie subiectul articolului..."></textarea>
           <button id="goBtn">Go</button>
           <div id="createMsg" class="muted"></div>
+          <div class="examples" id="examples">
+            <div class="example" data-example="Subiect: pensiile speciale ale magistraților\n\nUnghi: Nu e o discuție despre invidia față de profesii bine plătite, ci despre contractul rupt dintre stat și cetățean. Când statul cere austeritate de la oamenii obișnuiți, nu poate apăra privilegii greu de justificat.\n\nTon: ferm, civic-conservator, pe înțelesul oamenilor, fără limbaj tehnocratic.\n\nLimite: fără atacuri personale, fără exagerări, fără clișee populiste."><b>Pensii speciale</b>Contractul rupt dintre stat și cetățean.</div>
+            <div class="example" data-example="Subiect: Elena Udrea și ieșirea din penitenciar\n\nUnghi: Nu centra articolul pe personajul monden. Folosește cazul ca simbol pentru problema mai mare: pedeapsa se termină, dar prejudiciul și neîncrederea rămân la cetățean.\n\nTon: critic față de statul care nu recuperează banii și față de spectacolul mediatic care înlocuiește răspunderea reală.\n\nLimite: ton ferm, dar nu vindicativ; fără atacuri personale."><b>Caz public</b>Persoana ca simbol pentru o problemă mai mare.</div>
+            <div class="example" data-example="Subiect: creșterea taxelor locale\n\nUnghi: Scrie din perspectiva omului obișnuit care plătește taxe și vrea dreptate egală pentru toți. Statul cere mai mult înainte să dovedească faptul că respectă banii deja luați.\n\nTon: popular, concret, critic față de risipa administrativă, dar fără isterie."><b>Taxe locale</b>Perspectiva omului care muncește și plătește.</div>
+            <div class="example" data-example="Subiect: reforma din educație\n\nUnghi: Privește tema prin familie, muncă și viitorul copiilor, nu prin limbaj de minister. Arată cum deciziile abstracte se simt în casa unei familii normale.\n\nTon: cald față de părinți și profesori, ferm cu statul care promite mult și livrează haotic."><b>Educație</b>Familie, școală și stat care promite haotic.</div>
+          </div>
         </div>
 
         <div class="card" id="viewer">
@@ -224,6 +238,7 @@ async function refreshJobs() {
 
 async function loadJob(id) {
   const job = await api('/api/jobs/' + encodeURIComponent(id));
+  $('content').classList.remove('emptyMode');
   $('emptyViewer').style.display = 'none';
   $('articleContent').style.display = '';
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
@@ -244,6 +259,7 @@ async function tick() {
 
 $('loginBtn').onclick = login;
 $('goBtn').onclick = createJob;
+document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; $('subject').focus(); });
 $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 if (password) { $('password').value = password; login(); }
 </script>
