@@ -224,7 +224,7 @@ async function createJob() {
   const subject = $('subject').value.trim();
   if (!subject) return;
   $('goBtn').disabled = true;
-  $('createMsg').textContent = 'Trimis. Agentul îl va prelua la următorul poll.';
+  $('createMsg').textContent = '';
   try {
     const job = await api('/api/jobs', {method:'POST', body:JSON.stringify({subject})});
     $('subject').value = '';
