@@ -117,6 +117,7 @@ const PAGE = `<!doctype html>
     .inputWrap { position:relative; }
     .sendBtn { position:absolute; right:10px; bottom:15px; width:36px; height:36px; padding:0; margin:0; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
     .layout { display:grid; grid-template-columns:300px minmax(0,1fr); min-height:100vh; }
+    .mobileTopbar, .sidebarBackdrop { display:none; }
     .sidebar { position:sticky; top:0; height:100vh; max-height:100vh; overflow:auto; border-right:1px solid var(--line); background:#0d0e12; }
     .sidebarCard { padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; }
     .sidebarCard h2 { padding:18px 14px 12px; margin:0; }
@@ -156,15 +157,22 @@ const PAGE = `<!doctype html>
     .waitingText { color:rgba(238,238,238,.5); font-size:16px; }
     @media (max-width:850px) {
       main { padding-top:0; }
+      .mobileTopbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); background:rgba(13,14,18,.96); backdrop-filter:blur(14px); }
+      .mobileNavBtn { width:auto; margin:0; padding:8px 12px; border-radius:999px; background:#17191f; color:var(--text); border:1px solid var(--line); font-size:14px; font-weight:650; }
+      .mobileNavBtn.primary { background:var(--accent); color:#111; border:0; }
+      .mobileNavBtn[hidden] { display:none; }
+      .sidebarBackdrop { display:block; position:fixed; inset:0; z-index:30; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .15s ease; }
+      body.sidebarOpen .sidebarBackdrop { opacity:1; pointer-events:auto; }
       .layout { grid-template-columns:1fr; min-height:100vh; }
-      .sidebar { position:static; height:auto; max-height:36vh; border-right:0; border-bottom:1px solid var(--line); }
+      .sidebar { position:fixed; top:0; left:0; z-index:40; width:min(86vw, 340px); height:100dvh; max-height:none; border-right:1px solid var(--line); border-bottom:0; transform:translateX(-105%); transition:transform .18s ease; box-shadow:20px 0 60px rgba(0,0,0,.38); }
+      body.sidebarOpen .sidebar { transform:translateX(0); }
       .sidebarCard h2 { padding:14px 14px 10px; }
       .job { padding:9px 8px 9px 12px; }
       .jobActions { opacity:1; pointer-events:auto; }
       .content { padding:16px 14px 34px; max-width:none; }
       .content:not(.emptyMode) .compose { display:none; }
       .row { grid-template-columns:1fr; }
-      .content.emptyMode { min-height:calc(100vh - 36vh); }
+      .content.emptyMode { min-height:calc(100vh - 56px); justify-content:center; }
       .content.emptyMode .compose { margin-top:0; }
       .examples { grid-template-columns:1fr; }
       article { font-size:17px; line-height:1.6; }
@@ -186,6 +194,11 @@ const PAGE = `<!doctype html>
   </section>
 
   <section id="app" style="display:none">
+    <div class="mobileTopbar">
+      <button id="mobileSidebarBtn" class="mobileNavBtn primary">Articole</button>
+      <button id="mobileBackBtn" class="mobileNavBtn" hidden>← Subiect nou</button>
+    </div>
+    <div id="sidebarBackdrop" class="sidebarBackdrop"></div>
     <div class="layout">
       <aside class="sidebar">
         <div class="card sidebarCard">
@@ -259,6 +272,22 @@ function scrollArticleIntoView() {
   }
 }
 
+function openSidebar() { document.body.classList.add('sidebarOpen'); }
+function closeSidebar() { document.body.classList.remove('sidebarOpen'); }
+
+function updateMobileBackButton() {
+  const btn = $('mobileBackBtn');
+  if (btn) btn.hidden = !selectedId;
+}
+
+function showComposer() {
+  selectedId = null;
+  clearViewer();
+  closeSidebar();
+  refreshJobs();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
 async function login() {
   password = $('password').value || password;
   try {
@@ -288,6 +317,7 @@ async function createJob() {
     selectedId = job.id;
     await refreshJobs();
     await loadJob(job.id);
+    closeSidebar();
     scrollArticleIntoView();
   } catch (e) { $('createMsg').textContent = e.message; }
   finally { $('goBtn').disabled = false; }
@@ -310,6 +340,7 @@ async function refreshJobs() {
     selectedId = el.dataset.id;
     await loadJob(selectedId);
     await refreshJobs();
+    closeSidebar();
     scrollArticleIntoView();
   });
   document.querySelectorAll('.jobActionBtn').forEach(btn => btn.onclick = (e) => {
@@ -338,6 +369,7 @@ function clearViewer() {
   $('articleBody').textContent = '';
   $('articleImage').removeAttribute('src');
   $('articleImage').style.display = 'none';
+  updateMobileBackButton();
 }
 
 async function deleteJob(id) {
@@ -364,6 +396,7 @@ async function loadJob(id) {
   $('articleBody').textContent = job.article_text || waitingText;
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
+  updateMobileBackButton();
 }
 
 async function tick() {
@@ -375,6 +408,9 @@ async function tick() {
 
 $('loginBtn').onclick = login;
 $('goBtn').onclick = createJob;
+$('mobileSidebarBtn').onclick = openSidebar;
+$('sidebarBackdrop').onclick = closeSidebar;
+$('mobileBackBtn').onclick = showComposer;
 $('subject').addEventListener('input', autoResizeSubject);
 $('subject').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) createJob(); });
 document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; autoResizeSubject(); $('subject').focus(); });
