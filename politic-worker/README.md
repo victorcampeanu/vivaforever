@@ -36,11 +36,13 @@ Deploy:
 npx wrangler deploy
 ```
 
-DNS/route target:
+DNS/route target, deliberately narrow so existing `vivaforever.ro` subdomains are not touched:
 
 ```text
 politic.vivaforever.ro/* -> vivaforever-politic Worker
 ```
+
+Do not deploy this Worker with any wildcard route such as `*.vivaforever.ro/*` or `vivaforever.ro/*`. Those would intercept existing subdomains/pages.
 
 ## Hermes VM setup
 
