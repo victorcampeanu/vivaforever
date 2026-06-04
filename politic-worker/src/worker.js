@@ -154,7 +154,21 @@ const PAGE = `<!doctype html>
     img.hero { max-width:100%; border-radius:12px; border:1px solid var(--line); margin:12px 0; }
     a { color:var(--accent); }
     .waitingText { color:rgba(238,238,238,.5); font-size:16px; }
-    @media (max-width:850px) { main { padding-top:0; } .layout { grid-template-columns:1fr; } .sidebar { position:static; height:auto; max-height:260px; border-right:0; border-bottom:1px solid var(--line); } .content { padding:18px; } .row { grid-template-columns:1fr; } .content.emptyMode { min-height:auto; } .examples { grid-template-columns:1fr; } }
+    @media (max-width:850px) {
+      main { padding-top:0; }
+      .layout { grid-template-columns:1fr; min-height:100vh; }
+      .sidebar { position:static; height:auto; max-height:36vh; border-right:0; border-bottom:1px solid var(--line); }
+      .sidebarCard h2 { padding:14px 14px 10px; }
+      .job { padding:9px 8px 9px 12px; }
+      .jobActions { opacity:1; pointer-events:auto; }
+      .content { padding:16px 14px 34px; max-width:none; }
+      .content:not(.emptyMode) .compose { display:none; }
+      .row { grid-template-columns:1fr; }
+      .content.emptyMode { min-height:calc(100vh - 36vh); }
+      .content.emptyMode .compose { margin-top:0; }
+      .examples { grid-template-columns:1fr; }
+      article { font-size:17px; line-height:1.6; }
+    }
   </style>
 </head>
 <body>
@@ -239,6 +253,12 @@ function autoResizeSubject() {
   el.style.overflowY = 'hidden';
 }
 
+function scrollArticleIntoView() {
+  if (window.matchMedia('(max-width:850px)').matches) {
+    $('content').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+}
+
 async function login() {
   password = $('password').value || password;
   try {
@@ -268,6 +288,7 @@ async function createJob() {
     selectedId = job.id;
     await refreshJobs();
     await loadJob(job.id);
+    scrollArticleIntoView();
   } catch (e) { $('createMsg').textContent = e.message; }
   finally { $('goBtn').disabled = false; }
 }
@@ -284,11 +305,12 @@ async function refreshJobs() {
     const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(statusLabel) + '</span>';
     return '<div class="job' + active + '" data-id="' + id + '"><div class="jobMain"><span class="jobTitle">' + title + '</span>' + subject + status + '</div><div class="jobActions"><button class="jobActionBtn" data-action-id="' + id + '" title="Actions" aria-label="Actions">⋯</button><div class="jobMenu" data-menu-id="' + id + '" hidden><button class="deleteJobBtn" data-delete-id="' + id + '">Șterge</button></div></div></div>';
   }).join('') : 'Niciun articol încă.';
-  document.querySelectorAll('.job').forEach(el => el.onclick = (e) => {
+  document.querySelectorAll('.job').forEach(el => el.onclick = async (e) => {
     if (e.target.closest('.jobActions')) return;
     selectedId = el.dataset.id;
-    loadJob(selectedId);
-    refreshJobs();
+    await loadJob(selectedId);
+    await refreshJobs();
+    scrollArticleIntoView();
   });
   document.querySelectorAll('.jobActionBtn').forEach(btn => btn.onclick = (e) => {
     e.stopPropagation();
