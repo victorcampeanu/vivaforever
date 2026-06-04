@@ -102,7 +102,7 @@ const PAGE = `<!doctype html>
     .muted { color:var(--muted); }
     .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
-    textarea { min-height:54px; max-height:260px; resize:none; overflow:hidden; padding-right:58px; }
+    textarea { min-height:54px; resize:none; overflow:hidden; padding-right:58px; }
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
     button:disabled { opacity:.55; cursor:not-allowed; }
     .inputWrap { position:relative; }
@@ -204,8 +204,8 @@ function autoResizeSubject() {
   const el = $('subject');
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 260) + 'px';
-  el.style.overflowY = el.scrollHeight > 260 ? 'auto' : 'hidden';
+  el.style.height = el.scrollHeight + 'px';
+  el.style.overflowY = 'hidden';
 }
 
 async function login() {
