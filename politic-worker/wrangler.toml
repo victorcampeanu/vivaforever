@@ -8,7 +8,7 @@ routes = [
 
 [[kv_namespaces]]
 binding = "POLITIC_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "1644286957f5498081483343e1e2e848"
 
 [vars]
 # Set real values with wrangler secrets, not here:
