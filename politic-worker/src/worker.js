@@ -106,9 +106,9 @@ const PAGE = `<!doctype html>
     .loginShell { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:radial-gradient(circle at 50% 35%, rgba(214,179,90,.12), transparent 32%), var(--bg); }
     .loginCard { width:min(360px, 100%); padding:26px; border-radius:20px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
     .loginCard h2 { text-align:center; margin:0 0 18px; font-size:22px; color:rgba(238,238,238,.82); }
-    .loginCard input { text-align:center; }
-    .loginActions { display:flex; justify-content:center; margin-top:14px; }
-    #loginBtn { width:auto; min-width:104px; border-radius:999px; padding:10px 20px; margin:0; }
+    .loginInputWrap { position:relative; }
+    .loginCard input { text-align:center; padding-right:58px; }
+    #loginBtn { position:absolute; right:10px; top:50%; transform:translateY(-50%); width:36px; min-width:0; height:36px; border-radius:999px; padding:0; margin:0; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
     #loginErr { margin-top:14px; text-align:center; font-size:14px; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
     textarea { min-height:54px; resize:none; overflow:hidden; padding-right:58px; }
@@ -154,8 +154,10 @@ const PAGE = `<!doctype html>
   <section id="login" class="loginShell">
     <div class="card loginCard">
       <h2>Acces privat</h2>
-      <input id="password" type="password" placeholder="Parolă" autocomplete="current-password">
-      <div class="loginActions"><button id="loginBtn">Intră</button></div>
+      <div class="loginInputWrap">
+        <input id="password" type="password" placeholder="Parolă" autocomplete="current-password">
+        <button id="loginBtn" title="Intră" aria-label="Intră">↑</button>
+      </div>
       <div id="loginErr" class="error"></div>
     </div>
   </section>
