@@ -253,7 +253,8 @@ async function refreshJobs() {
     const active = selectedId === j.id ? ' active' : '';
     const title = escapeHtml(j.title || j.subject);
     const subject = j.title && j.subject && j.title !== j.subject ? '<span class="jobSubject">' + escapeHtml(j.subject) + '</span>' : '';
-    return '<div class="job' + active + '" data-id="' + escapeHtml(j.id) + '"><span class="jobTitle">' + title + '</span>' + subject + '<span class="status">' + escapeHtml(j.status) + '</span></div>';
+    const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(j.status) + '</span>';
+    return '<div class="job' + active + '" data-id="' + escapeHtml(j.id) + '"><span class="jobTitle">' + title + '</span>' + subject + status + '</div>';
   }).join('') : 'Niciun articol încă.';
   document.querySelectorAll('.job').forEach(el => el.onclick = () => { selectedId = el.dataset.id; loadJob(selectedId); refreshJobs(); });
 }
