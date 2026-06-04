@@ -176,7 +176,7 @@ const PAGE = `<!doctype html>
         <div class="card" id="viewer">
           <div id="emptyViewer" class="emptyViewer">Selectează un articol din stânga sau creează unul nou.</div>
           <div id="articleContent" style="display:none">
-            <div class="row"><h2 id="articleTitle">Articol</h2><div><span id="articleStatus" class="status"></span></div></div>
+            <div class="row"><h2 id="articleTitle">Articol</h2></div>
             <div id="articleMeta" class="muted"></div>
             <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
             <div id="articleError" class="error"></div>
@@ -255,7 +255,6 @@ async function loadJob(id) {
   $('emptyViewer').style.display = 'none';
   $('articleContent').style.display = '';
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
-  $('articleStatus').textContent = job.status;
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
   const waitingText = job.status === 'done' ? '' : 'Încă se generează... timp estimat aproximativ: 7 minute. Pagina se actualizează automat.';
