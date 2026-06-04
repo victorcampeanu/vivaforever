@@ -203,7 +203,7 @@ async function loadJob(id) {
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
   $('articleStatus').textContent = job.status;
   $('articleMeta').textContent = '';
-  $('articleError').textContent = job.error || '';
+  $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
   $('articleBody').textContent = job.article_text || (job.status === 'done' ? '' : 'Încă se generează... pagina se actualizează automat.');
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
@@ -279,6 +279,7 @@ export default {
           image_path: body.image_path || "",
           image_data_url: body.image_data_url || "",
           sources: body.sources || [],
+          error: "",
           updated_at: nowIso(),
         });
         await saveJob(env, job);
