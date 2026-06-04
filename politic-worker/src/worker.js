@@ -112,7 +112,7 @@ const PAGE = `<!doctype html>
     .sidebarCard { padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; }
     .sidebarCard h2 { padding:18px 14px 12px; margin:0; }
     .content { padding:28px 18px 60px; max-width:940px; width:100%; margin:0 auto; }
-    .pageTitle { max-width:760px; width:100%; margin:0 auto 18px; }
+    .pageTitle { max-width:760px; width:100%; margin:0 auto 18px; text-align:center; color:rgba(238,238,238,.3); }
     .compose { margin-bottom:18px; }
     .content.emptyMode { min-height:calc(100vh - 118px); display:flex; flex-direction:column; justify-content:center; }
     .content.emptyMode .compose { max-width:760px; width:100%; margin:0 auto; }
