@@ -188,8 +188,8 @@ const PAGE = `<!doctype html>
       .pageTitle { display:none; }
       .content.emptyMode .compose { margin-top:0; }
       .examples { grid-template-columns:1fr; }
-      .articleMenu { position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); top:auto; min-width:0; padding:8px; border-radius:18px; z-index:70; }
-      .articleMenu button { min-height:54px; padding:16px; border-radius:12px; text-align:center; font-size:17px; line-height:1.15; }
+      .articleMenu { position:absolute; top:38px; right:0; left:auto; bottom:auto; min-width:190px; padding:8px; border-radius:14px; z-index:70; }
+      .articleMenu button { min-height:46px; padding:12px 14px; border-radius:10px; text-align:left; font-size:16px; line-height:1.15; }
       article { font-size:17px; line-height:1.6; }
     }
   </style>
@@ -311,7 +311,7 @@ function autoResizeSubject() {
 
 function scrollArticleIntoView() {
   if (window.matchMedia('(max-width:850px)').matches) {
-    $('content').scrollIntoView({ behavior:'smooth', block:'start' });
+    window.scrollTo({ top:0, behavior:'smooth' });
   }
 }
 
