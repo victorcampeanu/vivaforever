@@ -103,6 +103,13 @@ const PAGE = `<!doctype html>
     .muted { color:var(--muted); }
     .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
     .hasSavedPassword #login { display:none; }
+    .loginShell { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:radial-gradient(circle at 50% 35%, rgba(214,179,90,.12), transparent 32%), var(--bg); }
+    .loginCard { width:min(360px, 100%); padding:26px; border-radius:20px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
+    .loginCard h2 { text-align:center; margin:0 0 18px; font-size:22px; color:rgba(238,238,238,.82); }
+    .loginCard input { text-align:center; }
+    .loginActions { display:flex; justify-content:center; margin-top:14px; }
+    #loginBtn { width:auto; min-width:104px; border-radius:999px; padding:10px 20px; margin:0; }
+    #loginErr { margin-top:14px; text-align:center; font-size:14px; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
     textarea { min-height:54px; resize:none; overflow:hidden; padding-right:58px; }
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
@@ -144,11 +151,13 @@ const PAGE = `<!doctype html>
 <body>
 <main>
 
-  <section id="login" class="card">
-    <h2>Acces</h2>
-    <input id="password" type="password" placeholder="Parolă">
-    <button id="loginBtn">Intră</button>
-    <div id="loginErr" class="error"></div>
+  <section id="login" class="loginShell">
+    <div class="card loginCard">
+      <h2>Acces privat</h2>
+      <input id="password" type="password" placeholder="Parolă" autocomplete="current-password">
+      <div class="loginActions"><button id="loginBtn">Intră</button></div>
+      <div id="loginErr" class="error"></div>
+    </div>
   </section>
 
   <section id="app" style="display:none">
