@@ -257,7 +257,8 @@ async function loadJob(id) {
   $('articleStatus').textContent = job.status;
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
-  $('articleBody').textContent = job.article_text || (job.status === 'done' ? '' : 'Încă se generează... pagina se actualizează automat.');
+  const waitingText = job.status === 'done' ? '' : 'Încă se generează... timp estimat aproximativ: 7 minute. Pagina se actualizează automat.';
+  $('articleBody').textContent = job.article_text || waitingText;
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
 }
