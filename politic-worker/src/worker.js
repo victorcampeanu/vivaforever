@@ -106,7 +106,7 @@ const PAGE = `<!doctype html>
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
     button:disabled { opacity:.55; cursor:not-allowed; }
     .inputWrap { position:relative; }
-    .sendBtn { position:absolute; right:10px; bottom:10px; width:36px; height:36px; padding:0; margin:0; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
+    .sendBtn { position:absolute; right:10px; bottom:15px; width:36px; height:36px; padding:0; margin:0; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
     .layout { display:grid; grid-template-columns:300px minmax(0,1fr); min-height:100vh; }
     .sidebar { position:sticky; top:0; height:100vh; max-height:100vh; overflow:auto; border-right:1px solid var(--line); background:#0d0e12; }
     .sidebarCard { padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; }
