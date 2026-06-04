@@ -184,10 +184,12 @@ const PAGE = `<!doctype html>
       .content { padding:16px 14px 34px; max-width:none; }
       .content:not(.emptyMode) .compose { display:none; }
       .row { grid-template-columns:1fr; }
-      .content.emptyMode { min-height:calc(100dvh - 56px); justify-content:center; }
+      .content.emptyMode { min-height:auto; justify-content:flex-start; }
       .pageTitle { display:none; }
       .content.emptyMode .compose { margin-top:0; }
       .examples { grid-template-columns:1fr; }
+      .articleMenu { position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); top:auto; min-width:0; padding:8px; border-radius:18px; z-index:70; }
+      .articleMenu button { min-height:54px; padding:16px; border-radius:12px; text-align:center; font-size:17px; line-height:1.15; }
       article { font-size:17px; line-height:1.6; }
     }
   </style>
