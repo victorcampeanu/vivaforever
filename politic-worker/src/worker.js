@@ -264,7 +264,7 @@ async function refreshJobs() {
     const active = selectedId === j.id ? ' active' : '';
     const title = escapeHtml(j.title || j.subject);
     const subject = j.title && j.subject && j.title !== j.subject ? '<span class="jobSubject">' + escapeHtml(j.subject) + '</span>' : '';
-    const statusLabel = j.status === 'queued' ? 'se generează' : j.status;
+    const statusLabel = (j.status === 'queued' || j.status === 'running') ? 'se generează' : j.status;
     const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(statusLabel) + '</span>';
     return '<div class="job' + active + '" data-id="' + escapeHtml(j.id) + '"><span class="jobTitle">' + title + '</span>' + subject + status + '</div>';
   }).join('') : 'Niciun articol încă.';
