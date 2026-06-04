@@ -225,6 +225,12 @@ async function api(path, opts={}) {
   return data;
 }
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function estimatedDoneText(job) {
+  const base = job.created_at ? new Date(job.created_at) : new Date();
+  const estimated = new Date(base.getTime() + 7 * 60 * 1000);
+  const time = estimated.toLocaleTimeString('ro-RO', { hour:'2-digit', minute:'2-digit' });
+  return 'Se estimează că va fi gata la ' + time + '. Pagina se actualizează automat.';
+}
 function autoResizeSubject() {
   const el = $('subject');
   if (!el) return;
@@ -331,7 +337,7 @@ async function loadJob(id) {
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
-  const waitingText = job.status === 'done' ? '' : 'Încă se generează... timp estimat aproximativ: 7 minute. Pagina se actualizează automat.';
+  const waitingText = job.status === 'done' ? '' : estimatedDoneText(job);
   $('articleBody').className = job.article_text ? '' : (waitingText ? 'waitingText' : '');
   $('articleBody').textContent = job.article_text || waitingText;
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
