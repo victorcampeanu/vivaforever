@@ -185,6 +185,7 @@ const PAGE = `<!doctype html>
       .content:not(.emptyMode) .compose { display:none; }
       .row { grid-template-columns:1fr; }
       .content.emptyMode { min-height:calc(100dvh - 56px); justify-content:center; }
+      .pageTitle { display:none; }
       .content.emptyMode .compose { margin-top:0; }
       .examples { grid-template-columns:1fr; }
       article { font-size:17px; line-height:1.6; }
