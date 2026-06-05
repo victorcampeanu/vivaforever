@@ -707,24 +707,24 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .story a { text-decoration:none; }
     .storyImage { width:100%; aspect-ratio:16/9; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
     .kicker { margin-bottom:6px; color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-    .story h2, .story h3 { margin:0; font-weight:900; letter-spacing:-.035em; line-height:.94; }
-    .lead h2 { font-size:clamp(42px, 5.4vw, 82px); }
-    .sideLead h3 { font-size:34px; }
-    .snippet { margin:10px 0 0; color:#302820; }
+    .story h2, .story h3 { margin:0; font-family:'Times New Roman', Georgia, serif; font-weight:700; letter-spacing:-.012em; line-height:1.04; font-kerning:normal; text-rendering:optimizeLegibility; }
+    .lead h2 { font-size:clamp(38px, 4.9vw, 72px); }
+    .sideLead h3 { font-size:30px; }
+    .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.5; }
     .meta { margin-top:10px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; }
     .belowGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; padding-top:20px; }
     .belowGrid .story { padding-right:14px; border-right:1px solid rgba(25,21,17,.28); }
     .belowGrid .story:last-child { border-right:0; }
-    .belowGrid h3 { font-size:25px; }
+    .belowGrid h3 { font-size:23px; }
     .smallStories { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:22px; padding-top:18px; border-top:1px solid rgba(25,21,17,.38); }
-    .smallStories h3 { font-size:21px; line-height:1; }
+    .smallStories h3 { font-size:20px; line-height:1.08; }
     .loading, .empty { padding:40px 0; text-align:center; color:var(--muted); font:15px system-ui,-apple-system,Segoe UI,sans-serif; }
     .modalBackdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:22px; background:rgba(21,17,13,.72); backdrop-filter:blur(8px); }
     .modalBackdrop[hidden] { display:none; }
     .articleModal { position:relative; width:min(980px,100%); max-height:min(88vh,980px); overflow:auto; padding:28px 34px 36px; background:var(--paper); color:var(--ink); border:1px solid rgba(25,21,17,.45); box-shadow:0 34px 110px rgba(0,0,0,.55); }
     .modalClose { position:sticky; top:0; float:right; width:36px; height:36px; margin:0 0 10px 14px; padding:0; border-radius:999px; background:#21170f; color:var(--paper); border:0; font-size:24px; line-height:1; cursor:pointer; }
     .modalKicker { color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-    .modalTitle { margin:8px 0 8px; font-size:clamp(38px,5vw,72px); line-height:.94; letter-spacing:-.04em; font-weight:900; }
+    .modalTitle { margin:8px 0 8px; font-family:'Times New Roman', Georgia, serif; font-size:clamp(36px,4.7vw,66px); line-height:1.04; letter-spacing:-.012em; font-weight:700; font-kerning:normal; text-rendering:optimizeLegibility; }
     .modalMeta { color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; margin-bottom:16px; }
     .modalImage { width:100%; max-height:460px; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin:8px 0 18px; background:#d8c9aa; }
     .modalBody { white-space:pre-wrap; column-count:2; column-gap:34px; font-size:19px; line-height:1.62; }
@@ -797,9 +797,15 @@ function dateLabel(job) {
   if (!d || Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('ro-RO', { day:'2-digit', month:'long', year:'numeric' });
 }
+function storySnippetLength(cls) {
+  if (cls === 'lead') return 760;
+  if (cls === 'sideLead') return 420;
+  if (cls === 'column') return 330;
+  return 260;
+}
 function story(job, cls, img) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
-  const text = escapeHtml(snippet(job.article_text || '', cls === 'lead' ? 430 : 230));
+  const text = escapeHtml(snippet(job.article_text || '', storySnippetLength(cls)));
   const image = img && job.image_data_url ? '<img class="storyImage" src="' + job.image_data_url + '" alt="">' : '';
   return '<article class="story ' + cls + '"><a class="storyLink" href="#" data-id="' + escapeHtml(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
 }
