@@ -262,7 +262,7 @@ const PAGE = `<!doctype html>
         <div class="card sidebarCard">
           <h2>Articole</h2>
           <div class="articleSearchWrap"><input id="articleSearch" class="articleSearch" type="search" placeholder="Caută în titluri și descrieri..."></div>
-          <div id="jobs" class="jobsList muted">Se încarcă...</div>
+          <div id="jobs" class="jobsList"><span class="emptyList">Se încarcă...</span></div>
         </div>
       </aside>
 
