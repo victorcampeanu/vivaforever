@@ -1,4 +1,6 @@
 const MAX_SUBJECT_LEN = 500;
+const TONE_OPTIONS = ["echilibrat", "ferm", "agresiv", "popular", "analitic", "ironie-rece"];
+const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator-independent", "neutru-critic"];
 const JOB_PREFIX = "job:";
 const INDEX_KEY = "jobs:index";
 const DIRECT_ORIGIN = "https://gpt.vivaforever.ro";
@@ -129,10 +131,12 @@ const PAGE = `<!doctype html>
     #loginErr { margin-top:14px; text-align:center; font-size:14px; }
     input, textarea, button { width:100%; border-radius:10px; border:1px solid var(--line); background:#0d0e12; color:var(--text); padding:12px; font:inherit; }
     textarea { min-height:54px; resize:none; overflow:hidden; padding-right:58px; }
+    select { border-radius:999px; border:1px solid var(--line); background:#111318; color:rgba(238,238,238,.82); padding:8px 32px 8px 11px; font:inherit; font-size:13px; outline:none; }
     button { background:var(--accent); color:#111; font-weight:700; cursor:pointer; border:none; margin-top:10px; }
     button:disabled { opacity:.55; cursor:not-allowed; }
     .inputWrap { position:relative; }
     .sendBtn { position:absolute; right:10px; bottom:15px; width:36px; height:36px; padding:0; margin:0; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
+    .composerOptions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
     .layout { display:grid; grid-template-columns:300px minmax(0,1fr); min-height:100vh; }
     .mobileTopbar, .sidebarBackdrop { display:none; }
     .sidebar { position:sticky; top:0; height:100vh; max-height:100vh; overflow:auto; border-right:1px solid var(--line); background:#0d0e12; }
@@ -263,6 +267,25 @@ const PAGE = `<!doctype html>
           <div class="inputWrap">
             <textarea id="subject" maxlength="500" placeholder="Scrie subiectul articolului..."></textarea>
             <button id="goBtn" class="sendBtn" title="Generează" aria-label="Generează">↑</button>
+          </div>
+          <div class="composerOptions" aria-label="Setări articol">
+            <select id="toneSelect" title="Ton articol" aria-label="Ton articol">
+              <option value="echilibrat">Ton: echilibrat</option>
+              <option value="ferm">Ton: ferm</option>
+              <option value="agresiv">Ton: agresiv</option>
+              <option value="popular">Ton: popular</option>
+              <option value="analitic">Ton: analitic</option>
+              <option value="ironie-rece">Ton: ironie rece</option>
+            </select>
+            <select id="viewpointSelect" title="Punct de vedere" aria-label="Punct de vedere">
+              <option value="suveranist">Perspectivă: suveranistă</option>
+              <option value="aur">Perspectivă: AUR</option>
+              <option value="psd">Perspectivă: PSD</option>
+              <option value="pnl">Perspectivă: PNL</option>
+              <option value="usr">Perspectivă: USR</option>
+              <option value="conservator-independent">Perspectivă: conservator independent</option>
+              <option value="neutru-critic">Perspectivă: neutru critică</option>
+            </select>
           </div>
           <div id="createMsg" class="muted"></div>
           <div class="examples" id="examples">
@@ -432,7 +455,9 @@ async function createJob() {
   $('goBtn').disabled = true;
   $('createMsg').textContent = '';
   try {
-    const job = await api('/api/jobs', {method:'POST', body:JSON.stringify({subject})});
+    const tone = $('toneSelect')?.value || 'echilibrat';
+    const viewpoint = $('viewpointSelect')?.value || 'suveranist';
+    const job = await api('/api/jobs', {method:'POST', body:JSON.stringify({subject, tone, viewpoint})});
     $('subject').value = '';
     autoResizeSubject();
     selectedId = job.id;
@@ -753,7 +778,7 @@ export default {
         const jobs = [];
         for (const id of ids) {
           const job = await loadJob(env, id);
-          if (job) jobs.push({ id: job.id, subject: job.subject, title: job.title, status: job.status, created_at: job.created_at, completed_at: job.completed_at });
+          if (job) jobs.push({ id: job.id, subject: job.subject, title: job.title, tone: job.tone, viewpoint: job.viewpoint, status: job.status, created_at: job.created_at, completed_at: job.completed_at });
         }
         return json({ jobs }, 200, corsHeaders(request));
       }
@@ -761,9 +786,11 @@ export default {
       if (url.pathname === "/api/jobs" && request.method === "POST") {
         const body = await request.json().catch(() => ({}));
         const subject = String(body.subject || "").trim().slice(0, MAX_SUBJECT_LEN);
+        const tone = TONE_OPTIONS.includes(String(body.tone || "")) ? String(body.tone) : "echilibrat";
+        const viewpoint = VIEWPOINT_OPTIONS.includes(String(body.viewpoint || "")) ? String(body.viewpoint) : "suveranist";
         if (!subject) return json({ error: "subject required" }, 400, corsHeaders(request));
-        const id = `${Date.now().toString(36)}-${(await sha256(subject + nowIso())).slice(0, 10)}`;
-        const job = { id, subject, status: "queued", created_at: nowIso(), updated_at: nowIso() };
+        const id = `${Date.now().toString(36)}-${(await sha256(subject + tone + viewpoint + nowIso())).slice(0, 10)}`;
+        const job = { id, subject, tone, viewpoint, status: "queued", created_at: nowIso(), updated_at: nowIso() };
         await saveJob(env, job);
         const ids = await loadIndex(env);
         await saveIndex(env, [id, ...ids]);
