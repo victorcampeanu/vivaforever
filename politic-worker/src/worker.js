@@ -940,15 +940,22 @@ function renderPaperIssue(sourceJobs) {
   const eligible = shuffledJobs(sourceJobs).filter(j => j.status === 'done');
   const withImages = eligible.filter(j => j.image_data_url);
   const withoutImages = eligible.filter(j => !j.image_data_url);
-  const full = withImages.slice(0, 7).concat(shuffledJobs(withoutImages), withImages.slice(7)).slice(0, 12);
-  if (!full.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
-  fullJobs = full;
-  const lead = full[0];
-  const side = full.slice(1, 3);
-  const below = full.slice(3, 7);
-  const small = shuffledJobs(full.slice(7, 12));
-  let html = '<section class="leadGrid">' + story(lead, 'lead', true) + side.map(j => story(j, 'sideLead', true)).join('') + '</section>';
-  if (below.length) html += '<section class="belowGrid">' + below.map(j => story(j, 'column', true)).join('') + '</section>';
+  const imageSlots = new Set([0, 2, 4, 6]);
+  const full = [];
+  for (let i = 0; i < 12; i++) {
+    const preferred = imageSlots.has(i) ? withImages : withoutImages;
+    const fallback = imageSlots.has(i) ? withoutImages : withImages;
+    full.push((preferred.length ? preferred : fallback).shift());
+  }
+  const compactFull = full.filter(Boolean);
+  if (!compactFull.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
+  fullJobs = compactFull;
+  const lead = compactFull[0];
+  const side = compactFull.slice(1, 3);
+  const below = compactFull.slice(3, 7);
+  const small = shuffledJobs(compactFull.slice(7, 12));
+  let html = '<section class="leadGrid">' + story(lead, 'lead', true) + side.map((j, index) => story(j, 'sideLead', index === 1)).join('') + '</section>';
+  if (below.length) html += '<section class="belowGrid">' + below.map((j, index) => story(j, 'column', index % 2 === 1)).join('') + '</section>';
   if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false)).join('') + '</section>';
   $('newsContent').className = '';
   $('newsContent').innerHTML = html;
