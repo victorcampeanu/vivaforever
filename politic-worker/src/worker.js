@@ -1,6 +1,6 @@
 const MAX_SUBJECT_LEN = 500;
 const TONE_OPTIONS = ["echilibrat", "ferm", "agresiv", "popular", "analitic", "ironie-rece"];
-const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator-independent", "neutru-critic"];
+const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator", "conservator-independent", "neutru-critic"];
 const JOB_PREFIX = "job:";
 const INDEX_KEY = "jobs:index";
 const DIRECT_ORIGIN = "https://gpt.vivaforever.ro";
@@ -107,7 +107,7 @@ const PAGE = `<!doctype html>
 <html lang="ro">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Generator de articole</title>
   <script>try { if (localStorage.getItem('politic_password')) document.documentElement.classList.add('hasSavedPassword'); } catch (_) {}</script>
@@ -144,6 +144,7 @@ const PAGE = `<!doctype html>
     .sidebarCard h2 { padding:18px 14px 10px; margin:0; }
     .articleSearchWrap { padding:0 12px 12px; }
     .articleSearch { width:100%; padding:9px 10px; border-radius:10px; background:#111318; color:var(--text); border:1px solid var(--line); font-size:14px; }
+    .emptyList { display:block; padding:10px 12px; color:var(--muted); }
     .content { padding:28px 18px 60px; max-width:940px; width:100%; margin:0 auto; }
     .pageTitle { max-width:760px; width:100%; margin:0 auto 18px; text-align:center; color:rgba(238,238,238,.3); }
     .content:not(.emptyMode) .pageTitle { display:none; }
@@ -218,6 +219,8 @@ const PAGE = `<!doctype html>
       .sidebarCard h2 { padding:14px 14px 10px; }
       .job { padding:9px 8px 9px 12px; }
       .jobActions { opacity:1; pointer-events:auto; }
+      input, textarea, select { font-size:16px; line-height:1.35; touch-action:manipulation; }
+      .articleSearch { font-size:16px; }
       .content { padding:16px 14px 34px; max-width:none; }
       .content:not(.emptyMode) .compose { display:none; }
       .row { grid-template-columns:1fr; }
@@ -283,7 +286,7 @@ const PAGE = `<!doctype html>
               <option value="psd">Perspectivă: PSD</option>
               <option value="pnl">Perspectivă: PNL</option>
               <option value="usr">Perspectivă: USR</option>
-              <option value="conservator-independent">Perspectivă: conservator independent</option>
+              <option value="conservator">Perspectivă: conservator</option>
               <option value="neutru-critic">Perspectivă: neutru critică</option>
             </select>
           </div>
@@ -497,7 +500,7 @@ function renderJobs(jobs) {
     const statusLabel = (j.status === 'queued' || j.status === 'running') ? 'se generează' : j.status;
     const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(statusLabel) + '</span>';
     return '<div class="job' + active + '" data-id="' + id + '"><div class="jobMain"><span class="jobTitle">' + title + '</span>' + subject + status + '</div><div class="jobActions"><button class="jobActionBtn" data-action-id="' + id + '" title="Actions" aria-label="Actions">⋯</button><div class="jobMenu" data-menu-id="' + id + '" hidden><button class="deleteJobBtn" data-delete-id="' + id + '">Șterge</button></div></div></div>';
-  }).join('') : (q ? 'Niciun rezultat.' : 'Niciun articol încă.');
+  }).join('') : (q ? '<span class="emptyList">Niciun rezultat.</span>' : '<span class="emptyList">Niciun articol încă.</span>');
   document.querySelectorAll('.job').forEach(el => el.onclick = async (e) => {
     if (e.target.closest('.jobActions')) return;
     selectedId = el.dataset.id;
