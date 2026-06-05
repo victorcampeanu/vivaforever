@@ -756,15 +756,19 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .masthead { text-align:center; padding:18px 0 12px; border-bottom:1px solid var(--rule); }
     .masthead h1 { margin:0; font-size:clamp(52px, 7.2vw, 104px); line-height:.9; letter-spacing:-.055em; font-weight:900; text-transform:uppercase; }
     .deck { display:flex; justify-content:center; gap:18px; margin-top:12px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-    .leadGrid { display:grid; grid-template-columns:1.35fr .8fr .8fr; gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); }
+    .leadGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); align-items:start; }
     .story { min-width:0; }
-    .story a { text-decoration:none; }
-    .storyImage { width:100%; aspect-ratio:16/9; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
+    .story a { display:block; text-decoration:none; }
+    .storyImage { width:100%; aspect-ratio:16/10; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
     .kicker { margin-bottom:6px; color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .story h2, .story h3 { margin:0; font-family:Georgia, 'Times New Roman', serif; font-weight:700; letter-spacing:0; line-height:1.1; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
-    .lead h2 { font-size:clamp(34px, 4.45vw, 64px); }
-    .sideLead h3 { font-size:28px; }
-    .snippet { margin:12px 0 0; color:#302820; font-size:17px; line-height:1.55; }
+    .lead h2 { font-size:clamp(28px, 3.15vw, 42px); }
+    .sideLead h3 { font-size:clamp(24px, 2.25vw, 34px); }
+    .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.48; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
+    .lead .snippet { -webkit-line-clamp:7; }
+    .sideLead .snippet { -webkit-line-clamp:6; }
+    .column .snippet { -webkit-line-clamp:5; }
+    .small .snippet { -webkit-line-clamp:4; }
     .meta { margin-top:10px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; }
     .belowGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; padding-top:20px; }
     .belowGrid .story { padding-right:14px; border-right:1px solid rgba(25,21,17,.28); }
@@ -791,7 +795,9 @@ const NEWSPAPER_PAGE = `<!doctype html>
       .leadGrid, .belowGrid, .smallStories { grid-template-columns:1fr; }
       .belowGrid .story { border-right:0; border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
       .masthead h1 { font-size:46px; letter-spacing:-.04em; }
-      .lead h2 { font-size:42px; }
+      .lead h2 { font-size:34px; }
+      .sideLead h3 { font-size:28px; }
+      .snippet { display:block; overflow:visible; }
       .modalBackdrop { padding:0; align-items:stretch; }
       .articleModal { max-height:100vh; width:100%; padding:18px 16px 30px; }
       .modalBody { max-width:none; font-size:18px; }
@@ -877,10 +883,10 @@ function dateLabel(job) {
   return d.toLocaleDateString('ro-RO', { day:'2-digit', month:'long', year:'numeric' });
 }
 function storySnippetLength(cls) {
-  if (cls === 'lead') return 680;
-  if (cls === 'sideLead') return 360;
-  if (cls === 'column') return 260;
-  return 180;
+  if (cls === 'lead') return 420;
+  if (cls === 'sideLead') return 320;
+  if (cls === 'column') return 240;
+  return 170;
 }
 function story(job, cls, img) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
