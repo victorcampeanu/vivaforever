@@ -757,6 +757,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .masthead h1 { margin:0; font-size:clamp(52px, 7.2vw, 104px); line-height:.9; letter-spacing:-.055em; font-weight:900; text-transform:uppercase; }
     .deck { display:flex; justify-content:center; gap:18px; margin-top:12px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .leadGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); align-items:stretch; }
+    .leadGrid .story:not(:last-child), .smallStories .story:not(:last-child) { padding-right:16px; border-right:1px solid rgba(25,21,17,.28); }
     .story { min-width:0; }
     .story a { height:100%; display:flex; flex-direction:column; text-decoration:none; }
     .storyImage { width:100%; aspect-ratio:16/10; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; flex:0 0 auto; }
@@ -789,6 +790,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     @media (max-width:900px) {
       #paper { width:100%; margin:0; padding:18px 16px 34px; }
       .leadGrid, .belowGrid, .smallStories { grid-template-columns:1fr; }
+      .leadGrid .story:not(:last-child), .smallStories .story:not(:last-child) { border-right:0; padding-right:0; }
       .belowGrid .story { border-right:0; border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
       .smallStories .story { border-bottom:1px solid rgba(25,21,17,.28); padding-bottom:16px; }
       .masthead h1 { font-size:46px; letter-spacing:-.04em; }
@@ -884,7 +886,7 @@ function storyTextBudget(job, cls, img, lines) {
   const perLine = cls === 'small' ? 54 : (cls === 'column' ? 48 : 56);
   const titlePenalty = Math.max(0, Math.ceil((titleLength - 42) / 16)) * perLine;
   const base = Math.max(120, (lines || 6) * perLine - titlePenalty);
-  return img ? Math.min(base, 360) : Math.min(base + 180, 760);
+  return img ? Math.min(base, 420) : Math.min(base + 240, 1200);
 }
 function story(job, cls, img, lines) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
@@ -960,15 +962,15 @@ function renderPaperIssue(sourceJobs) {
   const below = compactFull.slice(3, 9);
   const small = compactFull.slice(9, 12);
   const topSlots = [
-    { job: lead, cls: 'lead', img: true, lines: 6 },
-    { job: side[0], cls: 'sideLead', img: false, lines: 14 },
-    { job: side[1], cls: 'sideLead', img: true, lines: 6 },
+    { job: lead, cls: 'lead', img: true, lines: 7 },
+    { job: side[0], cls: 'sideLead', img: false, lines: 16 },
+    { job: side[1], cls: 'sideLead', img: true, lines: 7 },
   ].filter(slot => slot.job);
   const belowSlots = below.map((j, index) => {
     const img = Boolean(j.image_data_url) && (index === 1 || index === 4);
-    return { job: j, cls: 'column', img, lines: img ? 6 : 12 };
+    return { job: j, cls: 'column', img, lines: img ? 7 : 16 };
   });
-  const smallSlots = small.map(j => ({ job: j, cls: 'small', img: false, lines: 8 }));
+  const smallSlots = small.map(j => ({ job: j, cls: 'small', img: false, lines: 10 }));
   let html = '<section class="leadGrid">' + topSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
   if (belowSlots.length) html += '<section class="belowGrid">' + belowSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
   if (smallSlots.length) html += '<section class="smallStories">' + smallSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
