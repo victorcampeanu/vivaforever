@@ -762,10 +762,10 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .storyImage { width:100%; aspect-ratio:16/10; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
     .kicker { margin-bottom:6px; color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .story h2, .story h3 { margin:0; font-family:Georgia, 'Times New Roman', serif; font-weight:700; letter-spacing:0; line-height:1.1; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
-    .lead h2 { font-size:clamp(28px, 3.15vw, 42px); }
+    .lead h2 { font-size:clamp(24px, 2.25vw, 34px); }
     .sideLead h3 { font-size:clamp(24px, 2.25vw, 34px); }
     .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.48; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
-    .lead .snippet { -webkit-line-clamp:7; }
+    .lead .snippet { -webkit-line-clamp:6; }
     .sideLead .snippet { -webkit-line-clamp:6; }
     .column .snippet { -webkit-line-clamp:5; }
     .small .snippet { -webkit-line-clamp:4; }
@@ -883,7 +883,7 @@ function dateLabel(job) {
   return d.toLocaleDateString('ro-RO', { day:'2-digit', month:'long', year:'numeric' });
 }
 function storySnippetLength(cls) {
-  if (cls === 'lead') return 420;
+  if (cls === 'lead') return 320;
   if (cls === 'sideLead') return 320;
   if (cls === 'column') return 240;
   return 170;
