@@ -753,7 +753,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .topNav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:12px; border-bottom:3px double var(--rule); font:13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
     .back { text-decoration:none; border:1px solid rgba(25,21,17,.28); border-radius:999px; padding:7px 11px; color:var(--ink); letter-spacing:0; text-transform:none; font-weight:700; }
     .masthead { text-align:center; padding:18px 0 12px; border-bottom:1px solid var(--rule); }
-    .masthead h1 { margin:0; font-size:clamp(64px, 8.5vw, 126px); line-height:.86; letter-spacing:-.07em; font-weight:900; text-transform:uppercase; }
+    .masthead h1 { margin:0; font-size:clamp(52px, 7.2vw, 104px); line-height:.9; letter-spacing:-.055em; font-weight:900; text-transform:uppercase; }
     .deck { display:flex; justify-content:center; gap:18px; margin-top:12px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .leadGrid { display:grid; grid-template-columns:1.35fr .8fr .8fr; gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); }
     .story { min-width:0; }
@@ -789,7 +789,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
       #paper { width:100%; margin:0; padding:18px 16px 34px; }
       .leadGrid, .belowGrid, .smallStories { grid-template-columns:1fr; }
       .belowGrid .story { border-right:0; border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
-      .masthead h1 { font-size:54px; letter-spacing:-.05em; }
+      .masthead h1 { font-size:46px; letter-spacing:-.04em; }
       .lead h2 { font-size:42px; }
       .modalBackdrop { padding:0; align-items:stretch; }
       .articleModal { max-height:100vh; width:100%; padding:18px 16px 30px; }
