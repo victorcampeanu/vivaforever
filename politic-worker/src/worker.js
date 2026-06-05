@@ -806,7 +806,7 @@ function story(job, cls, img) {
 function sourceUrl(source) {
   if (!source) return '';
   const value = typeof source === 'string' ? source : (source.url || source.link || source.href || source.source_url || source.source || '');
-  const match = String(value || '').match(new RegExp('https?://[^\\s)\\]}>,"\']+', 'i'));
+  const match = String(value || '').match(new RegExp("https?://[^\\\\s)\\\\]}>,\\\"']+", "i"));
   return match ? match[0] : '';
 }
 function sourceLabel(source, url) {
