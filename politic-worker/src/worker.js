@@ -1,6 +1,7 @@
 const MAX_SUBJECT_LEN = 500;
 const JOB_PREFIX = "job:";
 const INDEX_KEY = "jobs:index";
+const DIRECT_ORIGIN = "https://gpt.vivaforever.ro";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -85,6 +86,21 @@ async function saveJob(env, job) {
   await env.POLITIC_KV.put(`${JOB_PREFIX}${job.id}`, JSON.stringify(job));
 }
 
+async function startDirect(env, path, job) {
+  if (!env.HERMES_SHARED_SECRET) throw new Error("direct secret missing");
+  const res = await fetch(DIRECT_ORIGIN + path, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "authorization": `Bearer ${env.HERMES_SHARED_SECRET}`,
+    },
+    body: JSON.stringify({ job }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `direct server ${res.status}`);
+  return data;
+}
+
 const PAGE = `<!doctype html>
 <html lang="ro">
 <head>
@@ -121,7 +137,9 @@ const PAGE = `<!doctype html>
     .mobileTopbar, .sidebarBackdrop { display:none; }
     .sidebar { position:sticky; top:0; height:100vh; max-height:100vh; overflow:auto; border-right:1px solid var(--line); background:#0d0e12; }
     .sidebarCard { padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; }
-    .sidebarCard h2 { padding:18px 14px 12px; margin:0; }
+    .sidebarCard h2 { padding:18px 14px 10px; margin:0; }
+    .articleSearchWrap { padding:0 12px 12px; }
+    .articleSearch { width:100%; padding:9px 10px; border-radius:10px; background:#111318; color:var(--text); border:1px solid var(--line); font-size:14px; }
     .content { padding:28px 18px 60px; max-width:940px; width:100%; margin:0 auto; }
     .pageTitle { max-width:760px; width:100%; margin:0 auto 18px; text-align:center; color:rgba(238,238,238,.3); }
     .content:not(.emptyMode) .pageTitle { display:none; }
@@ -231,6 +249,7 @@ const PAGE = `<!doctype html>
       <aside class="sidebar">
         <div class="card sidebarCard">
           <h2>Articole</h2>
+          <div class="articleSearchWrap"><input id="articleSearch" class="articleSearch" type="search" placeholder="Caută în titluri și descrieri..."></div>
           <div id="jobs" class="jobsList muted">Se încarcă...</div>
         </div>
       </aside>
@@ -287,6 +306,7 @@ let password = localStorage.getItem('politic_password') || '';
 let selectedId = null;
 let currentJob = null;
 let timer = null;
+let allJobs = [];
 
 function headers() { return {'content-type':'application/json', 'x-politic-password': password}; }
 async function api(path, opts={}) {
@@ -410,10 +430,10 @@ async function createJob() {
   finally { $('goBtn').disabled = false; }
 }
 
-async function refreshJobs() {
-  const data = await api('/api/jobs');
-  const jobs = data.jobs || [];
-  $('jobs').innerHTML = jobs.length ? jobs.map(j => {
+function renderJobs(jobs) {
+  const q = ($('articleSearch')?.value || '').trim().toLowerCase();
+  const visibleJobs = q ? jobs.filter(j => ((j.title || '') + ' ' + (j.subject || '')).toLowerCase().includes(q)) : jobs;
+  $('jobs').innerHTML = visibleJobs.length ? visibleJobs.map(j => {
     const active = selectedId === j.id ? ' active' : '';
     const id = escapeHtml(j.id);
     const title = escapeHtml(j.title || j.subject);
@@ -421,7 +441,7 @@ async function refreshJobs() {
     const statusLabel = (j.status === 'queued' || j.status === 'running') ? 'se generează' : j.status;
     const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(statusLabel) + '</span>';
     return '<div class="job' + active + '" data-id="' + id + '"><div class="jobMain"><span class="jobTitle">' + title + '</span>' + subject + status + '</div><div class="jobActions"><button class="jobActionBtn" data-action-id="' + id + '" title="Actions" aria-label="Actions">⋯</button><div class="jobMenu" data-menu-id="' + id + '" hidden><button class="deleteJobBtn" data-delete-id="' + id + '">Șterge</button></div></div></div>';
-  }).join('') : 'Niciun articol încă.';
+  }).join('') : (q ? 'Niciun rezultat.' : 'Niciun articol încă.');
   document.querySelectorAll('.job').forEach(el => el.onclick = async (e) => {
     if (e.target.closest('.jobActions')) return;
     selectedId = el.dataset.id;
@@ -444,6 +464,12 @@ async function refreshJobs() {
     e.stopPropagation();
     deleteJob(btn.dataset.deleteId);
   });
+}
+
+async function refreshJobs() {
+  const data = await api('/api/jobs');
+  allJobs = data.jobs || [];
+  renderJobs(allJobs);
 }
 
 function clearViewer() {
@@ -561,6 +587,7 @@ $('copyArticleTitleBtn').onclick = copyArticleTitle;
 $('deleteArticleBtn').onclick = deleteCurrentArticle;
 $('generateImageBtn').onclick = requestImage;
 $('subject').addEventListener('input', autoResizeSubject);
+$('articleSearch').addEventListener('input', () => renderJobs(allJobs));
 $('subject').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) createJob(); });
 document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; autoResizeSubject(); $('subject').focus(); });
 $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
@@ -722,6 +749,15 @@ export default {
         await saveJob(env, job);
         const ids = await loadIndex(env);
         await saveIndex(env, [id, ...ids]);
+        try {
+          await startDirect(env, "/politic-agent/start-article", job);
+        } catch (e) {
+          job.status = "failed";
+          job.error = "Serverul direct nu a pornit jobul: " + String(e.message || e).slice(0, 400);
+          job.completed_at = nowIso();
+          job.updated_at = nowIso();
+          await saveJob(env, job);
+        }
         return json(job, 201, corsHeaders(request));
       }
 
@@ -745,6 +781,14 @@ export default {
         job.image_error = "";
         job.updated_at = nowIso();
         await saveJob(env, job);
+        try {
+          await startDirect(env, "/politic-agent/start-image", job);
+        } catch (e) {
+          job.image_status = "failed";
+          job.image_error = "Serverul direct nu a pornit imaginea: " + String(e.message || e).slice(0, 400);
+          job.updated_at = nowIso();
+          await saveJob(env, job);
+        }
         return json(job, 202, corsHeaders(request));
       }
 
