@@ -437,16 +437,16 @@ function stripInlineSourceSection(text) {
   const value = String(text || '').trim();
   if (!value) return '';
   return value
-    .replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Surse\\s*\\n[\\s\\S]*$', 'i'), '')
-    .replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Sources\\s*\\n[\\s\\S]*$', 'i'), '')
+    .replace(new RegExp("\\\\n{2,}(?:#{1,6}\\\\s*)?Surse\\\\s*\\\\n[\\\\s\\\\S]*$", "i"), '')
+    .replace(new RegExp("\\\\n{2,}(?:#{1,6}\\\\s*)?Sources\\\\s*\\\\n[\\\\s\\\\S]*$", "i"), '')
     .trim();
 }
 function normalizeInlineHeading(value) {
   return String(value || '')
     .trim()
-    .replace(new RegExp('^#{1,6}\\s+'), '')
+    .replace(new RegExp("^#{1,6}\\\\s+"), '')
     .replace(new RegExp('[*_~]', 'g'), '')
-    .replace(new RegExp('\\s+', 'g'), ' ')
+    .replace(new RegExp("\\\\s+", "g"), ' ')
     .trim()
     .toLocaleLowerCase('ro-RO')
     .replace(new RegExp('^[ .,:;!?]+|[ .,:;!?]+$', 'g'), '');
@@ -455,7 +455,7 @@ function stripDuplicateInlineTitle(text, title) {
   const titleNorm = normalizeInlineHeading(title);
   const value = String(text || '').trimStart();
   if (!value || !titleNorm) return value;
-  const lines = value.split(new RegExp('\\r?\\n'));
+  const lines = value.split(new RegExp("\\\\r?\\\\n"));
   const firstIndex = lines.findIndex(line => line.trim());
   if (firstIndex < 0) return '';
   if (normalizeInlineHeading(lines[firstIndex]) !== titleNorm) return value;
@@ -836,14 +836,14 @@ async function api(path, opts={}) {
 }
 function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function stripInlineSourceSection(text) {
-  return String(text || '').replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Surse\\s*\\n[\\s\\S]*$', 'i'), '').trim();
+  return String(text || '').replace(new RegExp("\\\\n{2,}(?:#{1,6}\\\\s*)?Surse\\\\s*\\\\n[\\\\s\\\\S]*$", "i"), '').trim();
 }
 function normalizeInlineHeading(value) {
   return String(value || '')
     .trim()
-    .replace(new RegExp('^#{1,6}\\s+'), '')
+    .replace(new RegExp("^#{1,6}\\\\s+"), '')
     .replace(new RegExp('[*_~]', 'g'), '')
-    .replace(new RegExp('\\s+', 'g'), ' ')
+    .replace(new RegExp("\\\\s+", "g"), ' ')
     .trim()
     .toLocaleLowerCase('ro-RO')
     .replace(new RegExp('^[ .,:;!?]+|[ .,:;!?]+$', 'g'), '');
@@ -852,7 +852,7 @@ function stripDuplicateInlineTitle(text, title) {
   const titleNorm = normalizeInlineHeading(title);
   const value = String(text || '').trimStart();
   if (!value || !titleNorm) return value;
-  const lines = value.split(new RegExp('\\r?\\n'));
+  const lines = value.split(new RegExp("\\\\r?\\\\n"));
   const firstIndex = lines.findIndex(line => line.trim());
   if (firstIndex < 0) return '';
   if (normalizeInlineHeading(lines[firstIndex]) !== titleNorm) return value;
@@ -864,9 +864,9 @@ function articleTextForDisplay(job) {
   return stripDuplicateInlineTitle(stripInlineSourceSection(job?.article_text || ''), job?.title || job?.subject || '');
 }
 function snippet(job, max) {
-  const clean = articleTextForDisplay(job).replace(new RegExp('[#*_]', 'g'), '').replace(new RegExp('\\s+', 'g'), ' ').trim();
+  const clean = articleTextForDisplay(job).replace(new RegExp('[#*_]', 'g'), '').replace(new RegExp("\\\\s+", "g"), ' ').trim();
   if (clean.length <= max) return clean;
-  return clean.slice(0, max).replace(new RegExp('\\s+\\S*$'), '') + '...';
+  return clean.slice(0, max).replace(new RegExp("\\\\s+\\\\S*$"), '') + '...';
 }
 function dateLabel(job) {
   const raw = job.completed_at || job.created_at || '';
@@ -894,7 +894,7 @@ function sourceUrl(source) {
 }
 function sourceLabel(source, url) {
   if (!source) return url;
-  if (typeof source === 'string') return source.replace(url, '').replace(new RegExp('^[-–—:\s]+|[-–—:\s]+$', 'g'), '') || url;
+  if (typeof source === 'string') return source.replace(url, '').replace(new RegExp("^[-–—:\\\\s]+|[-–—:\\\\s]+$", "g"), '') || url;
   return source.title || source.name || source.label || source.publisher || url;
 }
 function renderModalSources(sources) {
