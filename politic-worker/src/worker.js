@@ -780,7 +780,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .modalTitle { margin:8px 0 8px; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(34px,4.35vw,60px); line-height:1.1; letter-spacing:0; font-weight:700; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
     .modalMeta { color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; margin-bottom:16px; }
     .modalImage { width:100%; max-height:460px; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin:8px 0 18px; background:#d8c9aa; }
-    .modalBody { white-space:pre-wrap; column-count:2; column-gap:34px; font-size:19px; line-height:1.62; }
+    .modalBody { white-space:pre-wrap; max-width:760px; margin:0 auto; font-size:19px; line-height:1.68; }
     .modalSources { margin-top:28px; padding-top:14px; border-top:1px solid rgba(25,21,17,.35); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--muted); }
     .modalSources a { color:var(--accent); text-decoration:none; overflow-wrap:anywhere; }
     .modalSources a:hover { text-decoration:underline; }
@@ -793,7 +793,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
       .lead h2 { font-size:42px; }
       .modalBackdrop { padding:0; align-items:stretch; }
       .articleModal { max-height:100vh; width:100%; padding:18px 16px 30px; }
-      .modalBody { column-count:1; font-size:18px; }
+      .modalBody { max-width:none; font-size:18px; }
     }
   </style>
 </head>
