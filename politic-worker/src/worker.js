@@ -734,12 +734,12 @@ const NEWSPAPER_PAGE = `<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Casa Publica</title>
-  <script>try { if (localStorage.getItem('politic_password')) document.documentElement.classList.add('hasSavedPassword'); } catch (_) {}</script>
   <style>
     :root { color-scheme:light; --paper:#f2ead8; --ink:#191511; --muted:#6f6658; --rule:#21170f; --accent:#9b1d1d; --gold:#b88a2e; }
     * { box-sizing:border-box; }
     body { margin:0; min-height:100vh; background:#15110d; color:var(--ink); font:17px/1.52 Georgia, 'Times New Roman', serif; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
     a { color:inherit; }
+    #login { display:none; }
     .loginShell { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:#15110d; color:#f4ead7; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
     .loginCard { width:min(360px,100%); padding:26px; border:1px solid rgba(244,234,215,.18); border-radius:20px; background:#201a14; }
     .loginCard h2 { text-align:center; margin:0 0 18px; font-size:22px; font-family:system-ui,-apple-system,Segoe UI,sans-serif; color:rgba(244,234,215,.82); }
@@ -749,7 +749,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     #loginBtn { position:absolute; right:10px; top:50%; transform:translateY(-50%); width:36px; min-width:0; height:36px; border-radius:999px; padding:0; margin:0; background:var(--gold); color:#15110d; border:0; font-weight:800; cursor:pointer; }
     #loginErr { margin-top:14px; text-align:center; color:#e48a8a; font:14px system-ui,-apple-system,Segoe UI,sans-serif; }
     .hasSavedPassword #login { display:none; }
-    #paper { display:none; width:min(1480px, calc(100% - 34px)); margin:18px auto 40px; padding:28px 34px 42px; background:var(--paper); box-shadow:0 30px 90px rgba(0,0,0,.42); }
+    #paper { display:block; width:min(1480px, calc(100% - 34px)); margin:18px auto 40px; padding:28px 34px 42px; background:var(--paper); box-shadow:0 30px 90px rgba(0,0,0,.42); }
     .topNav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:12px; border-bottom:3px double var(--rule); font:13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
     .back { text-decoration:none; border:1px solid rgba(25,21,17,.28); border-radius:999px; padding:7px 11px; color:var(--ink); letter-spacing:0; text-transform:none; font-weight:700; }
     .masthead { text-align:center; padding:18px 0 12px; border-bottom:1px solid var(--rule); }
@@ -828,9 +828,8 @@ const NEWSPAPER_PAGE = `<!doctype html>
 const $ = (id) => document.getElementById(id);
 let password = localStorage.getItem('politic_password') || '';
 let fullJobs = [];
-function headers() { return {'content-type':'application/json', 'x-politic-password': password}; }
 async function api(path, opts={}) {
-  const res = await fetch(path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+  const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || res.statusText);
   return data;
@@ -930,11 +929,9 @@ function closeArticleModal() {
   document.body.classList.remove('modalOpen');
 }
 async function loadPaper() {
-  const list = await api('/api/jobs');
-  const done = (list.jobs || []).filter(j => j.status === 'done').slice(0, 12);
-  if (!done.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
-  const jobs = await Promise.all(done.map(j => api('/api/jobs/' + encodeURIComponent(j.id)).catch(() => null)));
-  const full = jobs.filter(Boolean);
+  const list = await api('/api/public/casa-publica');
+  const full = (list.jobs || []).filter(j => j.status === 'done').slice(0, 12);
+  if (!full.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
   fullJobs = full;
   const lead = full[0];
   const side = full.slice(1, 3);
@@ -950,28 +947,19 @@ async function loadPaper() {
     openArticleModal(el.dataset.id);
   });
 }
-async function login() {
-  password = $('password').value || password;
+async function startPublicPaper() {
+  $('issueDate').textContent = new Date().toLocaleDateString('ro-RO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
   try {
-    await api('/api/jobs');
-    localStorage.setItem('politic_password', password);
-    $('login').style.display = 'none';
-    $('paper').style.display = 'block';
-    $('issueDate').textContent = new Date().toLocaleDateString('ro-RO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
     await loadPaper();
   } catch (e) {
-    document.documentElement.classList.remove('hasSavedPassword');
-    $('paper').style.display = 'none';
-    $('login').style.display = 'flex';
-    $('loginErr').textContent = 'Parolă greșită sau API indisponibil.';
+    $('newsContent').className = 'empty';
+    $('newsContent').textContent = 'Nu am putut încărca ediția.';
   }
 }
-$('loginBtn').onclick = login;
 $('modalClose').onclick = closeArticleModal;
 $('articleModalBackdrop').onclick = e => { if (e.target.id === 'articleModalBackdrop') closeArticleModal(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('articleModalBackdrop').hidden) closeArticleModal(); });
-$('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-if (password) { $('password').value = password; login(); }
+startPublicPaper();
 </script>
 </body>
 </html>`;
@@ -988,6 +976,32 @@ export default {
     if (url.pathname === "/" || url.pathname === "/index.html") return html(PAGE);
     if (url.pathname === "/casa-publica" || url.pathname === "/casa-publica/") return html(NEWSPAPER_PAGE);
     if (url.pathname === "/robots.txt") return new Response("User-agent: *\nDisallow: /\n", { headers: { "content-type": "text/plain", "x-robots-tag": "noindex, nofollow, noarchive" } });
+
+    if (url.pathname === "/api/public/casa-publica" && request.method === "GET") {
+      const ids = await loadIndex(env);
+      const jobs = [];
+      for (const id of ids) {
+        const job = await loadJob(env, id);
+        if (!job || job.status !== "done") continue;
+        const title = job.title || job.subject || "Articol";
+        jobs.push({
+          id: job.id,
+          source: job.source || "manual",
+          subject: job.subject || "",
+          title,
+          topic: job.topic || job.subject || title,
+          status: job.status,
+          created_at: job.created_at || "",
+          completed_at: job.completed_at || job.created_at || "",
+          article_text: cleanArticleTextForTitle(job.article_text || "", title),
+          sources: Array.isArray(job.sources) ? job.sources.slice(0, 20) : [],
+          image_data_url: job.image_data_url || "",
+        });
+        if (jobs.length >= 12) break;
+      }
+      jobs.sort((a, b) => String(b.completed_at || b.created_at || "").localeCompare(String(a.completed_at || a.created_at || "")));
+      return json({ jobs });
+    }
 
     if (url.pathname.startsWith("/api/agent/")) {
       if (!(await requireAgent(request, env))) return json({ error: "unauthorized" }, 401);
