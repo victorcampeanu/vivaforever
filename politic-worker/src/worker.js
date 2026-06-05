@@ -185,7 +185,9 @@ const PAGE = `<!doctype html>
     .imageControls { margin:10px 0 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
     .imageControls[hidden] { display:none; }
     .imageBtn { width:auto; margin:0; padding:9px 13px; border-radius:999px; background:var(--accent); color:#111; font-size:14px; font-weight:700; }
+    .imageBtn[hidden] { display:none; }
     .imageLoading { display:flex; align-items:center; gap:8px; color:rgba(238,238,238,.55); font-size:14px; }
+    .imageLoading[hidden] { display:none; }
     .spinner { width:15px; height:15px; border:2px solid rgba(238,238,238,.18); border-top-color:var(--accent); border-radius:999px; animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
     a { color:var(--accent); }
