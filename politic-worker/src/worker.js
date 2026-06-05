@@ -449,7 +449,7 @@ function normalizeInlineHeading(value) {
     .replace(new RegExp('\\s+', 'g'), ' ')
     .trim()
     .toLocaleLowerCase('ro-RO')
-    .replace(new RegExp('^[\\s.,:;!?—–\\-"()\\[\\]{}]+|[\\s.,:;!?—–\\-"()\\[\\]{}]+$', 'g'), '');
+    .replace(new RegExp('^[ .,:;!?]+|[ .,:;!?]+$', 'g'), '');
 }
 function stripDuplicateInlineTitle(text, title) {
   const titleNorm = normalizeInlineHeading(title);
@@ -846,7 +846,7 @@ function normalizeInlineHeading(value) {
     .replace(new RegExp('\\s+', 'g'), ' ')
     .trim()
     .toLocaleLowerCase('ro-RO')
-    .replace(new RegExp('^[\\s.,:;!?—–\\-"()\\[\\]{}]+|[\\s.,:;!?—–\\-"()\\[\\]{}]+$', 'g'), '');
+    .replace(new RegExp('^[ .,:;!?]+|[ .,:;!?]+$', 'g'), '');
 }
 function stripDuplicateInlineTitle(text, title) {
   const titleNorm = normalizeInlineHeading(title);
