@@ -164,6 +164,12 @@ const PAGE = `<!doctype html>
     .error { color:var(--bad); white-space:pre-wrap; }
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
     img.hero { max-width:100%; border-radius:12px; border:1px solid var(--line); margin:12px 0; }
+    .imageControls { margin:10px 0 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .imageControls[hidden] { display:none; }
+    .imageBtn { width:auto; margin:0; padding:9px 13px; border-radius:999px; background:var(--accent); color:#111; font-size:14px; font-weight:700; }
+    .imageLoading { display:flex; align-items:center; gap:8px; color:rgba(238,238,238,.55); font-size:14px; }
+    .spinner { width:15px; height:15px; border:2px solid rgba(238,238,238,.18); border-top-color:var(--accent); border-radius:999px; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
     a { color:var(--accent); }
     .articleSources { margin-top:30px; padding-top:18px; border-top:1px solid var(--line); white-space:normal; }
     .articleSources[hidden] { display:none; }
@@ -262,6 +268,10 @@ const PAGE = `<!doctype html>
             </div>
             <div id="articleMeta" class="muted"></div>
             <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
+            <div id="imageControls" class="imageControls" hidden>
+              <button id="generateImageBtn" class="imageBtn">Generează imagine</button>
+              <div id="imageLoading" class="imageLoading" hidden><span class="spinner"></span><span>Se generează imaginea...</span></div>
+            </div>
             <div id="articleError" class="error"></div>
             <article id="articleBody"></article>
             <div id="articleSources" class="articleSources" hidden></div>
@@ -449,6 +459,7 @@ function clearViewer() {
   $('articleMenu').hidden = true;
   $('articleImage').removeAttribute('src');
   $('articleImage').style.display = 'none';
+  renderImageControls(null);
   updateMobileBackButton();
 }
 
@@ -461,6 +472,36 @@ async function deleteJob(id) {
     clearViewer();
   }
   await refreshJobs();
+}
+
+async function requestImage() {
+  if (!currentJob?.id) return;
+  const btn = $('generateImageBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const job = await api('/api/jobs/' + encodeURIComponent(currentJob.id) + '/image', { method:'POST' });
+    currentJob = job;
+    renderImageControls(job);
+    await refreshJobs();
+  } catch (e) {
+    $('articleError').textContent = e.message || 'Nu am putut porni generarea imaginii.';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderImageControls(job) {
+  const controls = $('imageControls');
+  const btn = $('generateImageBtn');
+  const loading = $('imageLoading');
+  if (!controls || !btn || !loading) return;
+  const status = job?.image_status || '';
+  const hasImage = Boolean(job?.image_data_url);
+  const canGenerate = job?.status === 'done' && !hasImage && status !== 'queued' && status !== 'running';
+  const isGenerating = job?.status === 'done' && !hasImage && (status === 'queued' || status === 'running');
+  controls.hidden = !(canGenerate || isGenerating);
+  btn.hidden = !canGenerate;
+  loading.hidden = !isGenerating;
 }
 
 async function loadJob(id) {
@@ -478,6 +519,7 @@ async function loadJob(id) {
   renderSources(job.status === 'done' ? job.sources : []);
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
+  renderImageControls(job);
   updateMobileBackButton();
 }
 
@@ -517,6 +559,7 @@ $('articleActionBtn').onclick = toggleArticleMenu;
 $('copyArticleTextBtn').onclick = copyArticleText;
 $('copyArticleTitleBtn').onclick = copyArticleTitle;
 $('deleteArticleBtn').onclick = deleteCurrentArticle;
+$('generateImageBtn').onclick = requestImage;
 $('subject').addEventListener('input', autoResizeSubject);
 $('subject').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) createJob(); });
 document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; autoResizeSubject(); $('subject').focus(); });
@@ -555,6 +598,49 @@ export default {
         return json({ job: null });
       }
 
+      if (url.pathname === "/api/agent/image-claim" && request.method === "GET") {
+        const ids = await loadIndex(env);
+        for (const id of ids) {
+          const job = await loadJob(env, id);
+          if (job && job.status === "done" && job.image_status === "queued" && !job.image_data_url) {
+            job.image_status = "running";
+            job.image_claimed_at = nowIso();
+            job.updated_at = nowIso();
+            await saveJob(env, job);
+            return json({ job });
+          }
+        }
+        return json({ job: null });
+      }
+
+      if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/image-complete$/) && request.method === "POST") {
+        const id = decodeURIComponent(url.pathname.split("/")[4]);
+        const job = await loadJob(env, id);
+        if (!job) return json({ error: "not found" }, 404);
+        const body = await request.json();
+        job.image_status = "done";
+        job.image_completed_at = nowIso();
+        job.image_path = body.image_path || job.image_path || "";
+        job.image_data_url = body.image_data_url || job.image_data_url || "";
+        job.image_prompt = body.image_prompt || job.image_prompt || "";
+        job.image_error = "";
+        job.updated_at = nowIso();
+        await saveJob(env, job);
+        return json({ ok: true });
+      }
+
+      if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/image-fail$/) && request.method === "POST") {
+        const id = decodeURIComponent(url.pathname.split("/")[4]);
+        const job = await loadJob(env, id);
+        if (!job) return json({ error: "not found" }, 404);
+        const body = await request.json().catch(() => ({}));
+        job.image_status = "failed";
+        job.image_error = String(body.error || "image failed").slice(0, 5000);
+        job.updated_at = nowIso();
+        await saveJob(env, job);
+        return json({ ok: true });
+      }
+
       if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+$/) && request.method === "GET") {
         const id = decodeURIComponent(url.pathname.split("/")[4]);
         const job = await loadJob(env, id);
@@ -587,6 +673,9 @@ export default {
           markdown_path: body.markdown_path || "",
           image_path: body.image_path || "",
           image_data_url: body.image_data_url || "",
+          image_status: body.image_data_url ? "done" : "idle",
+          image_prompt: body.image_prompt || "",
+          image_error: "",
           sources: body.sources || [],
           error: "",
           updated_at: nowIso(),
@@ -641,6 +730,22 @@ export default {
         const job = await loadJob(env, decodeURIComponent(match[1]));
         if (!job) return json({ error: "not found" }, 404, corsHeaders(request));
         return json(job, 200, corsHeaders(request));
+      }
+
+      const imageMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)\/image$/);
+      if (imageMatch && request.method === "POST") {
+        const id = decodeURIComponent(imageMatch[1]);
+        const job = await loadJob(env, id);
+        if (!job) return json({ error: "not found" }, 404, corsHeaders(request));
+        if (job.status !== "done") return json({ error: "articolul încă nu este gata" }, 409, corsHeaders(request));
+        if (job.image_data_url) return json(job, 200, corsHeaders(request));
+        if (job.image_status === "queued" || job.image_status === "running") return json(job, 200, corsHeaders(request));
+        job.image_status = "queued";
+        job.image_requested_at = nowIso();
+        job.image_error = "";
+        job.updated_at = nowIso();
+        await saveJob(env, job);
+        return json(job, 202, corsHeaders(request));
       }
 
       if (match && request.method === "DELETE") {
