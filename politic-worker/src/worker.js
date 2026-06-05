@@ -3,6 +3,7 @@ const TONE_OPTIONS = ["echilibrat", "ferm", "agresiv", "popular", "analitic", "i
 const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator", "conservator-independent", "neutru-critic"];
 const JOB_PREFIX = "job:";
 const INDEX_KEY = "jobs:index";
+const PUBLIC_FEED_KEY = "casa-publica:feed";
 const DIRECT_ORIGIN = "https://gpt.vivaforever.ro";
 
 function json(data, status = 200, headers = {}) {
@@ -91,20 +92,102 @@ async function requireAgent(request, env) {
   return auth === `Bearer ${env.HERMES_SHARED_SECRET}`;
 }
 
-async function loadIndex(env) {
+function jobSortDate(job) {
+  return String(job?.completed_at || job?.created_at || "");
+}
+
+function jobToMeta(job) {
+  if (!job || !job.id) return null;
+  return {
+    id: String(job.id),
+    source: job.source || "manual",
+    subject: job.subject || "",
+    title: job.title || "",
+    tone: job.tone || "",
+    viewpoint: job.viewpoint || "",
+    status: job.status || "",
+    image_status: job.image_status || "",
+    has_image: Boolean(job.image_data_url),
+    created_at: job.created_at || "",
+    completed_at: job.completed_at || "",
+    updated_at: job.updated_at || "",
+  };
+}
+
+function normalizeIndexEntry(entry) {
+  if (typeof entry === "string") return { id: entry };
+  if (entry && typeof entry === "object" && entry.id) return jobToMeta(entry);
+  return null;
+}
+
+async function loadIndexEntries(env) {
   const raw = await env.POLITIC_KV.get(INDEX_KEY);
   if (!raw) return [];
   try {
     const value = JSON.parse(raw);
-    return Array.isArray(value) ? value : [];
+    if (!Array.isArray(value)) return [];
+    const seen = new Set();
+    const entries = [];
+    for (const item of value) {
+      const entry = normalizeIndexEntry(item);
+      if (!entry || !entry.id || seen.has(entry.id)) continue;
+      seen.add(entry.id);
+      entries.push(entry);
+    }
+    return entries.slice(0, 500);
   } catch {
     return [];
   }
 }
 
-async function saveIndex(env, ids) {
-  const unique = [...new Set(ids)].slice(0, 500);
-  await env.POLITIC_KV.put(INDEX_KEY, JSON.stringify(unique));
+async function loadIndex(env) {
+  return (await loadIndexEntries(env)).map((entry) => entry.id);
+}
+
+async function saveIndexEntries(env, entries) {
+  const seen = new Set();
+  const normalized = [];
+  for (const item of entries || []) {
+    const entry = normalizeIndexEntry(item);
+    if (!entry || !entry.id || seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    normalized.push(entry);
+  }
+  normalized.sort((a, b) => jobSortDate(b).localeCompare(jobSortDate(a)));
+  await env.POLITIC_KV.put(INDEX_KEY, JSON.stringify(normalized.slice(0, 500)));
+}
+
+async function saveIndex(env, items) {
+  await saveIndexEntries(env, items);
+}
+
+async function upsertIndexJob(env, job) {
+  const meta = jobToMeta(job);
+  if (!meta) return;
+  const entries = await loadIndexEntries(env);
+  await saveIndexEntries(env, [meta, ...entries.filter((entry) => entry.id !== meta.id)]);
+}
+
+async function removeIndexJob(env, id) {
+  const entries = await loadIndexEntries(env);
+  await saveIndexEntries(env, entries.filter((entry) => entry.id !== id));
+}
+
+async function hydrateIndexMetadata(env, entries) {
+  let changed = false;
+  const hydrated = [];
+  for (const entry of entries || []) {
+    if (entry.title || entry.subject || entry.status) {
+      hydrated.push(entry);
+      continue;
+    }
+    const job = await loadJob(env, entry.id);
+    const meta = jobToMeta(job) || entry;
+    hydrated.push(meta);
+    if (meta !== entry) changed = true;
+  }
+  if (changed) await saveIndexEntries(env, hydrated);
+  return hydrated;
 }
 
 async function loadJob(env, id) {
@@ -114,6 +197,55 @@ async function loadJob(env, id) {
 
 async function saveJob(env, job) {
   await env.POLITIC_KV.put(`${JOB_PREFIX}${job.id}`, JSON.stringify(job));
+}
+
+async function saveJobWithIndex(env, job) {
+  await saveJob(env, job);
+  await upsertIndexJob(env, job);
+}
+
+function publicJob(job) {
+  if (!job || job.status !== "done") return null;
+  const title = job.title || job.subject || "Articol";
+  return {
+    id: job.id,
+    source: job.source || "manual",
+    subject: job.subject || "",
+    title,
+    topic: job.topic || job.subject || title,
+    status: job.status,
+    created_at: job.created_at || "",
+    completed_at: job.completed_at || job.created_at || "",
+    article_text: cleanArticleTextForTitle(job.article_text || "", title),
+    sources: Array.isArray(job.sources) ? job.sources.slice(0, 20) : [],
+    image_data_url: job.image_data_url || "",
+  };
+}
+
+async function rebuildPublicFeed(env) {
+  const entries = await hydrateIndexMetadata(env, await loadIndexEntries(env));
+  const jobs = [];
+  for (const entry of entries) {
+    if (entry.status && entry.status !== "done") continue;
+    const job = await loadJob(env, entry.id);
+    const publicItem = publicJob(job);
+    if (publicItem) jobs.push(publicItem);
+    if (jobs.length >= 80) break;
+  }
+  jobs.sort((a, b) => jobSortDate(b).localeCompare(jobSortDate(a)));
+  await env.POLITIC_KV.put(PUBLIC_FEED_KEY, JSON.stringify({ jobs, updated_at: nowIso() }));
+  return jobs;
+}
+
+async function loadPublicFeed(env, limit) {
+  const raw = await env.POLITIC_KV.get(PUBLIC_FEED_KEY);
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.jobs)) return data.jobs.slice(0, limit);
+    } catch {}
+  }
+  return (await rebuildPublicFeed(env)).slice(0, limit);
 }
 
 async function startDirect(env, path, job) {
@@ -526,7 +658,7 @@ async function login() {
       await loadJob(initialArticleId).catch(() => { selectedId = null; clearViewer(); });
       await refreshJobs();
     }
-    timer = setInterval(tick, 5000);
+    scheduleTick(30000);
   } catch (e) {
     document.documentElement.classList.remove('hasSavedPassword');
     $('app').style.display = 'none';
@@ -698,11 +830,25 @@ async function deleteCurrentArticle() {
   if (selectedId) await deleteJob(selectedId);
 }
 
+function isJobActive(job) {
+  if (!job) return false;
+  if (job.status === 'queued' || job.status === 'claimed' || job.status === 'running') return true;
+  const requestedAt = job.image_requested_at ? Date.parse(job.image_requested_at) : 0;
+  const freshImage = requestedAt && (Date.now() - requestedAt < 30 * 60 * 1000);
+  return (job.image_status === 'queued' || job.image_status === 'running') && freshImage;
+}
+function scheduleTick(delay) {
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(tick, delay);
+}
 async function tick() {
   try {
     await refreshJobs();
     if (selectedId) await loadJob(selectedId);
   } catch (_) {}
+  const selectedActive = isJobActive(currentJob);
+  const listActive = allJobs.some(isJobActive);
+  scheduleTick(selectedActive ? 5000 : (listActive ? 10000 : 30000));
 }
 
 $('loginBtn').onclick = login;
@@ -1020,29 +1166,8 @@ export default {
     if (url.pathname === "/api/public/casa-publica" && request.method === "GET") {
       const requestedLimit = Number.parseInt(url.searchParams.get("limit") || "60", 10);
       const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 60, 12), 80);
-      const ids = await loadIndex(env);
-      const jobs = [];
-      for (const id of ids) {
-        const job = await loadJob(env, id);
-        if (!job || job.status !== "done") continue;
-        const title = job.title || job.subject || "Articol";
-        jobs.push({
-          id: job.id,
-          source: job.source || "manual",
-          subject: job.subject || "",
-          title,
-          topic: job.topic || job.subject || title,
-          status: job.status,
-          created_at: job.created_at || "",
-          completed_at: job.completed_at || job.created_at || "",
-          article_text: cleanArticleTextForTitle(job.article_text || "", title),
-          sources: Array.isArray(job.sources) ? job.sources.slice(0, 20) : [],
-          image_data_url: job.image_data_url || "",
-        });
-        if (jobs.length >= limit) break;
-      }
-      jobs.sort((a, b) => String(b.completed_at || b.created_at || "").localeCompare(String(a.completed_at || a.created_at || "")));
-      return json({ jobs });
+      const jobs = await loadPublicFeed(env, limit);
+      return json({ jobs }, 200, { "cache-control": "public, max-age=60, stale-while-revalidate=300", "x-robots-tag": "noindex, nofollow, noarchive" });
     }
 
     if (url.pathname.startsWith("/api/agent/")) {
@@ -1055,7 +1180,7 @@ export default {
           if (job && job.status === "queued") {
             job.status = "claimed";
             job.claimed_at = nowIso();
-            await saveJob(env, job);
+            await saveJobWithIndex(env, job);
             return json({ job });
           }
         }
@@ -1070,7 +1195,7 @@ export default {
             job.image_status = "running";
             job.image_claimed_at = nowIso();
             job.updated_at = nowIso();
-            await saveJob(env, job);
+            await saveJobWithIndex(env, job);
             return json({ job });
           }
         }
@@ -1091,7 +1216,8 @@ export default {
         job.image_prompt = body.image_prompt || job.image_prompt || "";
         job.image_error = "";
         job.updated_at = nowIso();
-        await saveJob(env, job);
+        await saveJobWithIndex(env, job);
+        await rebuildPublicFeed(env);
         return json({ ok: true, has_image: true, image_bytes: imageDataUrl.length });
       }
 
@@ -1103,7 +1229,7 @@ export default {
         job.image_status = "failed";
         job.image_error = String(body.error || "image failed").slice(0, 5000);
         job.updated_at = nowIso();
-        await saveJob(env, job);
+        await saveJobWithIndex(env, job);
         return json({ ok: true });
       }
 
@@ -1121,7 +1247,7 @@ export default {
         const body = await request.json();
         job.status = String(body.status || job.status).slice(0, 50);
         job.updated_at = nowIso();
-        await saveJob(env, job);
+        await saveJobWithIndex(env, job);
         return json({ ok: true });
       }
 
@@ -1147,7 +1273,8 @@ export default {
           error: "",
           updated_at: nowIso(),
         });
-        await saveJob(env, job);
+        await saveJobWithIndex(env, job);
+        await rebuildPublicFeed(env);
         return json({ ok: true });
       }
 
@@ -1186,10 +1313,10 @@ export default {
             updated_at: nowIso(),
             error: "",
           };
-          await saveJob(env, job);
+          await saveJobWithIndex(env, job);
           imported.push(id);
         }
-        await saveIndex(env, [...imported, ...ids]);
+        await rebuildPublicFeed(env);
         return json({ ok: true, imported: imported.length });
       }
 
@@ -1202,7 +1329,7 @@ export default {
         job.error = String(body.error || "failed").slice(0, 5000);
         job.completed_at = nowIso();
         job.updated_at = nowIso();
-        await saveJob(env, job);
+        await saveJobWithIndex(env, job);
         return json({ ok: true });
       }
 
@@ -1213,13 +1340,8 @@ export default {
       if (!(await requirePassword(request, env))) return json({ error: "unauthorized" }, 401, corsHeaders(request));
 
       if (url.pathname === "/api/jobs" && request.method === "GET") {
-        const ids = await loadIndex(env);
-        const jobs = [];
-        for (const id of ids) {
-          const job = await loadJob(env, id);
-          if (job) jobs.push({ id: job.id, source: job.source || "manual", subject: job.subject, title: job.title, tone: job.tone, viewpoint: job.viewpoint, status: job.status, created_at: job.created_at, completed_at: job.completed_at });
-        }
-        jobs.sort((a, b) => String(b.completed_at || b.created_at || "").localeCompare(String(a.completed_at || a.created_at || "")));
+        const jobs = await hydrateIndexMetadata(env, await loadIndexEntries(env));
+        jobs.sort((a, b) => jobSortDate(b).localeCompare(jobSortDate(a)));
         return json({ jobs }, 200, corsHeaders(request));
       }
 
@@ -1231,9 +1353,7 @@ export default {
         if (!subject) return json({ error: "subject required" }, 400, corsHeaders(request));
         const id = `${Date.now().toString(36)}-${(await sha256(subject + tone + viewpoint + nowIso())).slice(0, 10)}`;
         const job = { id, subject, tone, viewpoint, status: "queued", created_at: nowIso(), updated_at: nowIso() };
-        await saveJob(env, job);
-        const ids = await loadIndex(env);
-        await saveIndex(env, [id, ...ids]);
+        await saveJobWithIndex(env, job);
         try {
           await startDirect(env, "/politic-agent/start-article", job);
         } catch (e) {
@@ -1241,7 +1361,7 @@ export default {
           job.error = "Serverul direct nu a pornit jobul: " + String(e.message || e).slice(0, 400);
           job.completed_at = nowIso();
           job.updated_at = nowIso();
-          await saveJob(env, job);
+          await saveJobWithIndex(env, job);
         }
         return json(job, 201, corsHeaders(request));
       }
@@ -1271,23 +1391,23 @@ export default {
         job.image_requested_at = nowIso();
         job.image_error = "";
         job.updated_at = nowIso();
-        await saveJob(env, job);
+        await saveJobWithIndex(env, job);
         try {
           await startDirect(env, "/politic-agent/start-image", job);
         } catch (e) {
           job.image_status = "failed";
           job.image_error = "Serverul direct nu a pornit imaginea: " + String(e.message || e).slice(0, 400);
           job.updated_at = nowIso();
-          await saveJob(env, job);
+          await saveJobWithIndex(env, job);
         }
         return json(job, 202, corsHeaders(request));
       }
 
       if (match && request.method === "DELETE") {
         const id = decodeURIComponent(match[1]);
-        const ids = await loadIndex(env);
-        await saveIndex(env, ids.filter((existingId) => existingId !== id));
+        await removeIndexJob(env, id);
         await env.POLITIC_KV.delete(`${JOB_PREFIX}${id}`);
+        await rebuildPublicFeed(env);
         return json({ ok: true }, 200, corsHeaders(request));
       }
     }
