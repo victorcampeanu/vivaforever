@@ -535,8 +535,11 @@ function renderImageControls(job) {
   if (!controls || !btn || !loading) return;
   const status = job?.image_status || '';
   const hasImage = Boolean(job?.image_data_url);
-  const canGenerate = job?.status === 'done' && !hasImage && status !== 'queued' && status !== 'running';
-  const isGenerating = job?.status === 'done' && !hasImage && (status === 'queued' || status === 'running');
+  const requestedAt = job?.image_requested_at ? Date.parse(job.image_requested_at) : 0;
+  const requestIsFresh = requestedAt && (Date.now() - requestedAt < 30 * 60 * 1000);
+  const isActiveImageRequest = (status === 'queued' || status === 'running') && requestIsFresh;
+  const canGenerate = job?.status === 'done' && !hasImage && !isActiveImageRequest;
+  const isGenerating = job?.status === 'done' && !hasImage && isActiveImageRequest;
   controls.hidden = !(canGenerate || isGenerating);
   btn.hidden = !canGenerate;
   loading.hidden = !isGenerating;
