@@ -137,6 +137,7 @@ const PAGE = `<!doctype html>
     .inputWrap { position:relative; }
     .sendBtn { position:absolute; right:10px; bottom:15px; width:36px; height:36px; padding:0; margin:0; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
     .composerOptions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+    .composerOptions select { width:auto; max-width:100%; }
     .layout { display:grid; grid-template-columns:300px minmax(0,1fr); min-height:100vh; }
     .mobileTopbar, .sidebarBackdrop { display:none; }
     .sidebar { position:sticky; top:0; height:100vh; max-height:100vh; overflow:auto; border-right:1px solid var(--line); background:#0d0e12; }
@@ -220,6 +221,8 @@ const PAGE = `<!doctype html>
       .job { padding:9px 8px 9px 12px; }
       .jobActions { opacity:1; pointer-events:auto; }
       input, textarea, select { font-size:16px; line-height:1.35; touch-action:manipulation; }
+      .composerOptions { flex-wrap:nowrap; gap:6px; margin-top:8px; overflow:hidden; }
+      .composerOptions select { flex:1 1 0; min-width:0; height:34px; padding:6px 24px 6px 10px; border-radius:999px; background:#111318; border:1px solid rgba(238,238,238,.12); color:rgba(238,238,238,.74); font-size:16px; line-height:1.1; }
       .articleSearch { font-size:16px; }
       .content { padding:16px 14px 34px; max-width:none; }
       .content:not(.emptyMode) .compose { display:none; }
@@ -273,21 +276,21 @@ const PAGE = `<!doctype html>
           </div>
           <div class="composerOptions" aria-label="Setări articol">
             <select id="toneSelect" title="Ton articol" aria-label="Ton articol">
-              <option value="echilibrat">Ton: echilibrat</option>
-              <option value="ferm">Ton: ferm</option>
-              <option value="agresiv">Ton: agresiv</option>
-              <option value="popular">Ton: popular</option>
-              <option value="analitic">Ton: analitic</option>
-              <option value="ironie-rece">Ton: ironie rece</option>
+              <option value="echilibrat">Echilibrat</option>
+              <option value="ferm">Ferm</option>
+              <option value="agresiv">Agresiv</option>
+              <option value="popular">Popular</option>
+              <option value="analitic">Analitic</option>
+              <option value="ironie-rece">Ironie rece</option>
             </select>
             <select id="viewpointSelect" title="Punct de vedere" aria-label="Punct de vedere">
-              <option value="suveranist">Perspectivă: suveranistă</option>
-              <option value="aur">Perspectivă: AUR</option>
-              <option value="psd">Perspectivă: PSD</option>
-              <option value="pnl">Perspectivă: PNL</option>
-              <option value="usr">Perspectivă: USR</option>
-              <option value="conservator">Perspectivă: conservator</option>
-              <option value="neutru-critic">Perspectivă: neutru critică</option>
+              <option value="suveranist">Suveranist</option>
+              <option value="aur">AUR</option>
+              <option value="psd">PSD</option>
+              <option value="pnl">PNL</option>
+              <option value="usr">USR</option>
+              <option value="conservator">Conservator</option>
+              <option value="neutru-critic">Neutru critic</option>
             </select>
           </div>
           <div id="createMsg" class="muted"></div>
