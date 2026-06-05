@@ -165,6 +165,13 @@ const PAGE = `<!doctype html>
     article { white-space:pre-wrap; font-size:18px; line-height:1.65; }
     img.hero { max-width:100%; border-radius:12px; border:1px solid var(--line); margin:12px 0; }
     a { color:var(--accent); }
+    .articleSources { margin-top:30px; padding-top:18px; border-top:1px solid var(--line); white-space:normal; }
+    .articleSources[hidden] { display:none; }
+    .articleSources h3 { margin:0 0 10px; font-size:16px; color:rgba(238,238,238,.62); }
+    .articleSources ol { margin:0; padding-left:22px; }
+    .articleSources li { margin:7px 0; padding-left:3px; color:rgba(238,238,238,.7); line-height:1.45; }
+    .articleSources a { color:var(--accent); text-decoration:none; overflow-wrap:anywhere; }
+    .articleSources a:hover { text-decoration:underline; }
     .waitingText { color:rgba(238,238,238,.5); font-size:16px; }
     @media (max-width:850px) {
       main { padding-top:0; }
@@ -257,6 +264,7 @@ const PAGE = `<!doctype html>
             <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
             <div id="articleError" class="error"></div>
             <article id="articleBody"></article>
+            <div id="articleSources" class="articleSources" hidden></div>
           </div>
         </div>
       </section>
@@ -295,6 +303,32 @@ async function copyToClipboard(text) {
   el.remove();
 }
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function extractHttpUrl(value) {
+  const match = String(value || '').match(/https?:\/\/[^\s)\]}>,"']+/i);
+  return match ? match[0] : '';
+}
+function sourceUrl(source) {
+  if (!source) return '';
+  if (typeof source === 'string') return extractHttpUrl(source);
+  return extractHttpUrl(source.url || source.link || source.href || source.source_url || source.source || '');
+}
+function sourceLabel(source, url) {
+  if (!source) return url;
+  if (typeof source === 'string') return source.replace(url, '').replace(/^[-–—:\s]+|[-–—:\s]+$/g, '') || url;
+  return source.title || source.name || source.label || source.publisher || url;
+}
+function renderSources(sources) {
+  const box = $('articleSources');
+  const list = Array.isArray(sources) ? sources : [];
+  const rows = list.map(source => {
+    const url = sourceUrl(source);
+    if (!url) return '';
+    const label = String(sourceLabel(source, url) || url).trim();
+    return '<li><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(label) + '</a></li>';
+  }).filter(Boolean);
+  box.hidden = !rows.length;
+  box.innerHTML = rows.length ? '<h3>Surse</h3><ol>' + rows.join('') + '</ol>' : '';
+}
 function estimatedDoneText(job) {
   const base = job.created_at ? new Date(job.created_at) : new Date();
   const estimated = new Date(base.getTime() + 7 * 60 * 1000);
@@ -411,6 +445,7 @@ function clearViewer() {
   $('articleMeta').textContent = '';
   $('articleError').textContent = '';
   $('articleBody').textContent = '';
+  renderSources([]);
   $('articleMenu').hidden = true;
   $('articleImage').removeAttribute('src');
   $('articleImage').style.display = 'none';
@@ -440,6 +475,7 @@ async function loadJob(id) {
   const waitingText = job.status === 'done' ? '' : estimatedDoneText(job);
   $('articleBody').className = job.article_text ? '' : (waitingText ? 'waitingText' : '');
   $('articleBody').textContent = job.article_text || waitingText;
+  renderSources(job.status === 'done' ? job.sources : []);
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
   updateMobileBackButton();
