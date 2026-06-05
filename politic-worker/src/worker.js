@@ -766,12 +766,13 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .sideLead h3 { font-size:clamp(24px, 2.25vw, 34px); }
     .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.48; text-align:justify; text-justify:inter-word; hyphens:auto; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
     .meta { margin-top:10px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; }
-    .belowGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; padding-top:20px; }
-    .belowGrid .story { padding-right:14px; border-right:1px solid rgba(25,21,17,.28); }
-    .belowGrid .story:last-child { border-right:0; }
-    .belowGrid h3 { font-size:22px; }
-    .smallStories { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:22px; padding-top:18px; border-top:1px solid rgba(25,21,17,.38); }
-    .smallStories h3 { font-size:20px; line-height:1.12; }
+    .balancedColumns { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding-top:20px; }
+    .paperColumn { min-width:0; padding-right:18px; border-right:1px solid rgba(25,21,17,.28); }
+    .paperColumn:last-child { border-right:0; padding-right:0; }
+    .paperColumn .story { padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid rgba(25,21,17,.28); }
+    .paperColumn .story:last-child { margin-bottom:0; border-bottom:0; }
+    .paperColumn .story a { height:auto; }
+    .paperColumn h3 { font-size:22px; line-height:1.12; }
     .loading, .empty { padding:40px 0; text-align:center; color:var(--muted); font:15px system-ui,-apple-system,Segoe UI,sans-serif; }
     .modalBackdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:22px; background:rgba(21,17,13,.72); backdrop-filter:blur(8px); }
     .modalBackdrop[hidden] { display:none; }
@@ -788,8 +789,9 @@ const NEWSPAPER_PAGE = `<!doctype html>
     body.modalOpen { overflow:hidden; }
     @media (max-width:900px) {
       #paper { width:100%; margin:0; padding:18px 16px 34px; }
-      .leadGrid, .belowGrid, .smallStories { grid-template-columns:1fr; }
-      .belowGrid .story { border-right:0; border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
+      .leadGrid, .balancedColumns { grid-template-columns:1fr; }
+      .paperColumn { border-right:0; padding-right:0; }
+      .paperColumn .story { border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
       .masthead h1 { font-size:46px; letter-spacing:-.04em; }
       .lead h2 { font-size:34px; }
       .sideLead h3 { font-size:28px; }
@@ -940,6 +942,25 @@ function shuffledJobs(list) {
     .sort((a, b) => a.rank - b.rank)
     .map(item => item.job);
 }
+function storyEstimate(job, img, lines) {
+  const titleLength = String(job?.title || job?.subject || '').length;
+  const titleLines = Math.max(1, Math.ceil(titleLength / 28));
+  return (img ? 190 : 0) + titleLines * 28 + (lines || 6) * 24 + 54;
+}
+function balanceSlots(slots, columns = 3) {
+  const buckets = Array.from({ length: columns }, () => ({ height: 0, slots: [] }));
+  slots.forEach(slot => {
+    let target = buckets[0];
+    for (const bucket of buckets) if (bucket.height < target.height) target = bucket;
+    target.slots.push(slot);
+    target.height += storyEstimate(slot.job, slot.img, slot.lines);
+  });
+  return buckets.map(bucket => bucket.slots);
+}
+function renderColumnSlots(slots) {
+  const columns = balanceSlots(slots);
+  return '<section class="balancedColumns">' + columns.map(col => '<div class="paperColumn">' + col.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</div>').join('') + '</section>';
+}
 function renderPaperIssue(sourceJobs) {
   const eligible = shuffledJobs(sourceJobs).filter(j => j.status === 'done');
   const withImages = eligible.filter(j => j.image_data_url);
@@ -963,10 +984,12 @@ function renderPaperIssue(sourceJobs) {
     { job: side[0], cls: 'sideLead', img: false, lines: 14 },
     { job: side[1], cls: 'sideLead', img: true, lines: 6 },
   ].filter(slot => slot.job);
-  const belowSlots = below.map((j, index) => ({ job: j, cls: 'column', img: index % 2 === 1, lines: index % 2 === 1 ? 5 : 11 }));
+  const remainingSlots = compactFull.slice(3, 12).map((j, index) => {
+    const img = Boolean(j.image_data_url) && index % 3 === 1;
+    return { job: j, cls: 'column', img, lines: img ? 5 : 12 };
+  });
   let html = '<section class="leadGrid">' + topSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
-  if (belowSlots.length) html += '<section class="belowGrid">' + belowSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
-  if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false, 6)).join('') + '</section>';
+  if (remainingSlots.length) html += renderColumnSlots(remainingSlots);
   $('newsContent').className = '';
   $('newsContent').innerHTML = html;
   document.querySelectorAll('.storyLink').forEach(el => el.onclick = (event) => {
