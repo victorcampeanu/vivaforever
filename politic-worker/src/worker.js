@@ -811,7 +811,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
   </section>
   <main id="paper">
     <div class="topNav"><a class="back" href="/">← Generator</a><span id="issueDate"></span><div class="issueActions"><button id="regenIssue" class="regenBtn" type="button">Regenerează</button><span>Ediție aleatorie</span></div></div>
-    <header class="masthead"><h1>Casa Publica</h1><div class="deck"><span>Politică</span><span>Analiză</span><span>Arhivă vie</span></div></header>
+    <header class="masthead"><h1>Casa Publica</h1><div class="deck"><span>Politică</span><span>Analiză</span></div></header>
     <div id="newsContent" class="loading">Se încarcă ediția...</div>
   </main>
   <div id="articleModalBackdrop" class="modalBackdrop" hidden>
