@@ -937,13 +937,16 @@ function shuffledJobs(list) {
     .map(item => item.job);
 }
 function renderPaperIssue(sourceJobs) {
-  const full = shuffledJobs(sourceJobs).filter(j => j.status === 'done').slice(0, 12);
+  const eligible = shuffledJobs(sourceJobs).filter(j => j.status === 'done');
+  const withImages = eligible.filter(j => j.image_data_url);
+  const withoutImages = eligible.filter(j => !j.image_data_url);
+  const full = withImages.slice(0, 7).concat(shuffledJobs(withoutImages), withImages.slice(7)).slice(0, 12);
   if (!full.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
   fullJobs = full;
   const lead = full[0];
   const side = full.slice(1, 3);
   const below = full.slice(3, 7);
-  const small = full.slice(7, 12);
+  const small = shuffledJobs(full.slice(7, 12));
   let html = '<section class="leadGrid">' + story(lead, 'lead', true) + side.map(j => story(j, 'sideLead', true)).join('') + '</section>';
   if (below.length) html += '<section class="belowGrid">' + below.map(j => story(j, 'column', true)).join('') + '</section>';
   if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false)).join('') + '</section>';
