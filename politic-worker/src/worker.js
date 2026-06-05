@@ -958,7 +958,7 @@ function renderPaperIssue(sourceJobs) {
   });
 }
 async function loadPaper() {
-  const list = await api('/api/public/casa-publica?limit=60');
+  const list = await api('/api/public/casa-publica?limit=80');
   paperPool = (list.jobs || []).filter(j => j.status === 'done');
   renderPaperIssue(paperPool);
 }
