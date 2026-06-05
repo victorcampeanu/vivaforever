@@ -705,7 +705,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .leadGrid { display:grid; grid-template-columns:1.35fr .8fr .8fr; gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); }
     .story { min-width:0; }
     .story a { text-decoration:none; }
-    .storyImage { width:100%; aspect-ratio:16/9; object-fit:cover; filter:grayscale(1) contrast(1.08); border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
+    .storyImage { width:100%; aspect-ratio:16/9; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
     .kicker { margin-bottom:6px; color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .story h2, .story h3 { margin:0; font-weight:900; letter-spacing:-.035em; line-height:.94; }
     .lead h2 { font-size:clamp(42px, 5.4vw, 82px); }
@@ -719,12 +719,28 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .smallStories { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:22px; padding-top:18px; border-top:1px solid rgba(25,21,17,.38); }
     .smallStories h3 { font-size:21px; line-height:1; }
     .loading, .empty { padding:40px 0; text-align:center; color:var(--muted); font:15px system-ui,-apple-system,Segoe UI,sans-serif; }
+    .modalBackdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:22px; background:rgba(21,17,13,.72); backdrop-filter:blur(8px); }
+    .modalBackdrop[hidden] { display:none; }
+    .articleModal { position:relative; width:min(980px,100%); max-height:min(88vh,980px); overflow:auto; padding:28px 34px 36px; background:var(--paper); color:var(--ink); border:1px solid rgba(25,21,17,.45); box-shadow:0 34px 110px rgba(0,0,0,.55); }
+    .modalClose { position:sticky; top:0; float:right; width:36px; height:36px; margin:0 0 10px 14px; padding:0; border-radius:999px; background:#21170f; color:var(--paper); border:0; font-size:24px; line-height:1; cursor:pointer; }
+    .modalKicker { color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+    .modalTitle { margin:8px 0 8px; font-size:clamp(38px,5vw,72px); line-height:.94; letter-spacing:-.04em; font-weight:900; }
+    .modalMeta { color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; margin-bottom:16px; }
+    .modalImage { width:100%; max-height:460px; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin:8px 0 18px; background:#d8c9aa; }
+    .modalBody { white-space:pre-wrap; column-count:2; column-gap:34px; font-size:19px; line-height:1.62; }
+    .modalSources { margin-top:28px; padding-top:14px; border-top:1px solid rgba(25,21,17,.35); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--muted); }
+    .modalSources a { color:var(--accent); text-decoration:none; overflow-wrap:anywhere; }
+    .modalSources a:hover { text-decoration:underline; }
+    body.modalOpen { overflow:hidden; }
     @media (max-width:900px) {
       #paper { width:100%; margin:0; padding:18px 16px 34px; }
       .leadGrid, .belowGrid, .smallStories { grid-template-columns:1fr; }
       .belowGrid .story { border-right:0; border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
       .masthead h1 { font-size:54px; letter-spacing:-.05em; }
       .lead h2 { font-size:42px; }
+      .modalBackdrop { padding:0; align-items:stretch; }
+      .articleModal { max-height:100vh; width:100%; padding:18px 16px 30px; }
+      .modalBody { column-count:1; font-size:18px; }
     }
   </style>
 </head>
@@ -744,9 +760,21 @@ const NEWSPAPER_PAGE = `<!doctype html>
     <header class="masthead"><h1>Casa Publica</h1><div class="deck"><span>Politică</span><span>Analiză</span><span>Arhivă vie</span></div></header>
     <div id="newsContent" class="loading">Se încarcă ediția...</div>
   </main>
+  <div id="articleModalBackdrop" class="modalBackdrop" hidden>
+    <div class="articleModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="modalClose" class="modalClose" aria-label="Închide">×</button>
+      <div id="modalKicker" class="modalKicker"></div>
+      <h2 id="modalTitle" class="modalTitle"></h2>
+      <div id="modalMeta" class="modalMeta"></div>
+      <img id="modalImage" class="modalImage" alt="" hidden>
+      <div id="modalBody" class="modalBody"></div>
+      <div id="modalSources" class="modalSources" hidden></div>
+    </div>
+  </div>
 <script>
 const $ = (id) => document.getElementById(id);
 let password = localStorage.getItem('politic_password') || '';
+let fullJobs = [];
 function headers() { return {'content-type':'application/json', 'x-politic-password': password}; }
 async function api(path, opts={}) {
   const res = await fetch(path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
@@ -773,7 +801,49 @@ function story(job, cls, img) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
   const text = escapeHtml(snippet(job.article_text || '', cls === 'lead' ? 430 : 230));
   const image = img && job.image_data_url ? '<img class="storyImage" src="' + job.image_data_url + '" alt="">' : '';
-  return '<article class="story ' + cls + '"><a href="/?article=' + encodeURIComponent(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
+  return '<article class="story ' + cls + '"><a class="storyLink" href="#" data-id="' + escapeHtml(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
+}
+function sourceUrl(source) {
+  if (!source) return '';
+  const value = typeof source === 'string' ? source : (source.url || source.link || source.href || source.source_url || source.source || '');
+  const match = String(value || '').match(new RegExp('https?://[^\\s)\\]}>,"\']+', 'i'));
+  return match ? match[0] : '';
+}
+function sourceLabel(source, url) {
+  if (!source) return url;
+  if (typeof source === 'string') return source.replace(url, '').replace(new RegExp('^[-–—:\s]+|[-–—:\s]+$', 'g'), '') || url;
+  return source.title || source.name || source.label || source.publisher || url;
+}
+function renderModalSources(sources) {
+  const list = Array.isArray(sources) ? sources : [];
+  const seen = new Set();
+  const rows = list.map(source => {
+    const url = sourceUrl(source);
+    if (!url) return '';
+    const key = url.toLowerCase();
+    if (seen.has(key)) return '';
+    seen.add(key);
+    return '<li><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(sourceLabel(source, url)) + '</a></li>';
+  }).filter(Boolean);
+  $('modalSources').hidden = !rows.length;
+  $('modalSources').innerHTML = rows.length ? '<strong>Surse</strong><ol>' + rows.join('') + '</ol>' : '';
+}
+function openArticleModal(id) {
+  const job = fullJobs.find(j => j.id === id);
+  if (!job) return;
+  $('modalKicker').textContent = job.source === 'archive' ? 'Arhivă' : 'Actual';
+  $('modalTitle').textContent = job.title || job.subject || 'Articol';
+  $('modalMeta').textContent = dateLabel(job);
+  $('modalBody').textContent = stripInlineSourceSection(job.article_text || '');
+  if (job.image_data_url) { $('modalImage').src = job.image_data_url; $('modalImage').hidden = false; }
+  else { $('modalImage').removeAttribute('src'); $('modalImage').hidden = true; }
+  renderModalSources(job.sources);
+  $('articleModalBackdrop').hidden = false;
+  document.body.classList.add('modalOpen');
+}
+function closeArticleModal() {
+  $('articleModalBackdrop').hidden = true;
+  document.body.classList.remove('modalOpen');
 }
 async function loadPaper() {
   const list = await api('/api/jobs');
@@ -781,6 +851,7 @@ async function loadPaper() {
   if (!done.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
   const jobs = await Promise.all(done.map(j => api('/api/jobs/' + encodeURIComponent(j.id)).catch(() => null)));
   const full = jobs.filter(Boolean);
+  fullJobs = full;
   const lead = full[0];
   const side = full.slice(1, 3);
   const below = full.slice(3, 7);
@@ -790,6 +861,10 @@ async function loadPaper() {
   if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false)).join('') + '</section>';
   $('newsContent').className = '';
   $('newsContent').innerHTML = html;
+  document.querySelectorAll('.storyLink').forEach(el => el.onclick = (event) => {
+    event.preventDefault();
+    openArticleModal(el.dataset.id);
+  });
 }
 async function login() {
   password = $('password').value || password;
@@ -808,6 +883,9 @@ async function login() {
   }
 }
 $('loginBtn').onclick = login;
+$('modalClose').onclick = closeArticleModal;
+$('articleModalBackdrop').onclick = e => { if (e.target.id === 'articleModalBackdrop') closeArticleModal(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('articleModalBackdrop').hidden) closeArticleModal(); });
 $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 if (password) { $('password').value = password; login(); }
 </script>
