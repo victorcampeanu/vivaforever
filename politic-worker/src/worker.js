@@ -778,7 +778,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .articleModal { position:relative; width:min(980px,100%); max-height:min(88vh,980px); overflow:auto; padding:28px 34px 36px; background:var(--paper); color:var(--ink); border:1px solid rgba(25,21,17,.45); box-shadow:0 34px 110px rgba(0,0,0,.55); }
     .modalClose { position:sticky; top:0; float:right; width:36px; height:36px; margin:0 0 10px 14px; padding:0; border-radius:999px; background:#21170f; color:var(--paper); border:0; font-size:24px; line-height:1; cursor:pointer; }
     .modalKicker { color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-    .modalTitle { margin:8px 0 8px; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(34px,4.35vw,60px); line-height:1.1; letter-spacing:0; font-weight:700; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
+    .modalTitle { margin:8px 0 8px; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(28px,3.1vw,44px); line-height:1.12; letter-spacing:0; font-weight:700; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
     .modalMeta { color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; margin-bottom:16px; }
     .modalImage { width:100%; max-height:460px; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin:8px 0 18px; background:#d8c9aa; }
     .modalBody { white-space:pre-wrap; max-width:760px; margin:0 auto; font-size:19px; line-height:1.68; }
