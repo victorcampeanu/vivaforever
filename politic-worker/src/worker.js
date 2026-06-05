@@ -792,7 +792,7 @@ export default {
           if (!title || !articleText) continue;
           const existing = await loadJob(env, id);
           const date = String(raw.date || raw.completed_at || raw.created_at || nowIso()).slice(0, 40);
-          const createdAt = date.length === 10 ? `${date}T12:00:00.000Z` : date;
+          const createdAt = date.length === 10 ? `${date}T00:00:00.000Z` : date;
           const job = {
             ...(existing || {}),
             id,
@@ -808,8 +808,8 @@ export default {
             image_data_url: existing?.image_data_url || "",
             image_status: existing?.image_data_url ? "done" : "idle",
             image_prompt: raw.image_prompt || existing?.image_prompt || "",
-            created_at: existing?.created_at || createdAt,
-            completed_at: raw.completed_at || existing?.completed_at || createdAt,
+            created_at: createdAt,
+            completed_at: raw.completed_at || createdAt,
             updated_at: nowIso(),
             error: "",
           };
