@@ -304,7 +304,7 @@ async function copyToClipboard(text) {
 }
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function extractHttpUrl(value) {
-  const match = String(value || '').match(/https?:\/\/[^\s)\]}>,"']+/i);
+  const match = String(value || '').match(new RegExp("https?://[^\\\\s)\\\\]}>,\\\"']+", "i"));
   return match ? match[0] : '';
 }
 function sourceUrl(source) {
