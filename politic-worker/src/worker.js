@@ -555,6 +555,13 @@ export default {
         return json({ job: null });
       }
 
+      if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+$/) && request.method === "GET") {
+        const id = decodeURIComponent(url.pathname.split("/")[4]);
+        const job = await loadJob(env, id);
+        if (!job) return json({ exists: false });
+        return json({ exists: true, status: job.status });
+      }
+
       if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/status$/) && request.method === "POST") {
         const id = decodeURIComponent(url.pathname.split("/")[4]);
         const job = await loadJob(env, id);
