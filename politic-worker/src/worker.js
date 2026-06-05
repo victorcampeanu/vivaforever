@@ -1082,15 +1082,17 @@ export default {
         const job = await loadJob(env, id);
         if (!job) return json({ error: "not found" }, 404);
         const body = await request.json();
+        const imageDataUrl = String(body.image_data_url || job.image_data_url || "");
+        if (!imageDataUrl) return json({ error: "image_data_url required" }, 400);
         job.image_status = "done";
         job.image_completed_at = nowIso();
         job.image_path = body.image_path || job.image_path || "";
-        job.image_data_url = body.image_data_url || job.image_data_url || "";
+        job.image_data_url = imageDataUrl;
         job.image_prompt = body.image_prompt || job.image_prompt || "";
         job.image_error = "";
         job.updated_at = nowIso();
         await saveJob(env, job);
-        return json({ ok: true });
+        return json({ ok: true, has_image: true, image_bytes: imageDataUrl.length });
       }
 
       if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/image-fail$/) && request.method === "POST") {
@@ -1258,7 +1260,13 @@ export default {
         if (!job) return json({ error: "not found" }, 404, corsHeaders(request));
         if (job.status !== "done") return json({ error: "articolul încă nu este gata" }, 409, corsHeaders(request));
         if (job.image_data_url) return json(job, 200, corsHeaders(request));
-        if (job.image_status === "queued" || job.image_status === "running") return json(job, 200, corsHeaders(request));
+        if (job.image_status === "queued" || job.image_status === "running") {
+          const lastImageTouch = Date.parse(job.image_claimed_at || job.image_requested_at || job.updated_at || "") || 0;
+          const stale = lastImageTouch && (Date.now() - lastImageTouch > 20 * 60 * 1000);
+          if (!stale) return json(job, 200, corsHeaders(request));
+          job.image_status = "failed";
+          job.image_error = "Generarea imaginii a expirat. Încearcă din nou.";
+        }
         job.image_status = "queued";
         job.image_requested_at = nowIso();
         job.image_error = "";
