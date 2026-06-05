@@ -764,7 +764,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .story h2, .story h3 { margin:0; font-family:Georgia, 'Times New Roman', serif; font-weight:700; letter-spacing:0; line-height:1.1; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
     .lead h2 { font-size:clamp(24px, 2.25vw, 34px); }
     .sideLead h3 { font-size:clamp(24px, 2.25vw, 34px); }
-    .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.48; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
+    .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.48; text-align:justify; text-justify:inter-word; hyphens:auto; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
     .lead .snippet { -webkit-line-clamp:6; }
     .sideLead .snippet { -webkit-line-clamp:6; }
     .column .snippet { -webkit-line-clamp:5; }
@@ -785,7 +785,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .modalTitle { margin:8px 0 8px; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(28px,3.1vw,44px); line-height:1.12; letter-spacing:0; font-weight:700; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
     .modalMeta { color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; margin-bottom:16px; }
     .modalImage { width:100%; max-height:460px; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin:8px 0 18px; background:#d8c9aa; }
-    .modalBody { white-space:pre-wrap; max-width:760px; margin:0 auto; font-size:19px; line-height:1.68; }
+    .modalBody { white-space:pre-wrap; max-width:760px; margin:0 auto; font-size:19px; line-height:1.68; text-align:justify; text-justify:inter-word; hyphens:auto; }
     .modalSources { margin-top:28px; padding-top:14px; border-top:1px solid rgba(25,21,17,.35); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--muted); }
     .modalSources a { color:var(--accent); text-decoration:none; overflow-wrap:anywhere; }
     .modalSources a:hover { text-decoration:underline; }
