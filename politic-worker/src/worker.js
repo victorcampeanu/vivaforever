@@ -350,14 +350,26 @@ function sourceLabel(source, url) {
 function renderSources(sources) {
   const box = $('articleSources');
   const list = Array.isArray(sources) ? sources : [];
+  const seen = new Set();
   const rows = list.map(source => {
     const url = sourceUrl(source);
     if (!url) return '';
+    const key = url.toLowerCase();
+    if (seen.has(key)) return '';
+    seen.add(key);
     const label = String(sourceLabel(source, url) || url).trim();
     return '<li><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(label) + '</a></li>';
   }).filter(Boolean);
   box.hidden = !rows.length;
   box.innerHTML = rows.length ? '<h3>Surse</h3><ol>' + rows.join('') + '</ol>' : '';
+}
+function stripInlineSourceSection(text) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  return value
+    .replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Surse\\s*\\n[\\s\\S]*$', 'i'), '')
+    .replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Sources\\s*\\n[\\s\\S]*$', 'i'), '')
+    .trim();
 }
 function estimatedDoneText(job) {
   const base = job.created_at ? new Date(job.created_at) : new Date();
@@ -540,8 +552,9 @@ async function loadJob(id) {
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
   const waitingText = job.status === 'done' ? '' : estimatedDoneText(job);
-  $('articleBody').className = job.article_text ? '' : (waitingText ? 'waitingText' : '');
-  $('articleBody').textContent = job.article_text || waitingText;
+  const articleText = stripInlineSourceSection(job.article_text || '');
+  $('articleBody').className = articleText ? '' : (waitingText ? 'waitingText' : '');
+  $('articleBody').textContent = articleText || waitingText;
   renderSources(job.status === 'done' ? job.sources : []);
   if (job.image_data_url) { $('articleImage').src = job.image_data_url; $('articleImage').style.display = ''; }
   else { $('articleImage').style.display = 'none'; }
@@ -698,10 +711,10 @@ export default {
           topic: body.topic || job.subject,
           article_text: body.article_text || "",
           markdown_path: body.markdown_path || "",
-          image_path: body.image_path || "",
-          image_data_url: body.image_data_url || "",
-          image_status: body.image_data_url ? "done" : "idle",
-          image_prompt: body.image_prompt || "",
+          image_path: "",
+          image_data_url: "",
+          image_status: "idle",
+          image_prompt: "",
           image_error: "",
           sources: body.sources || [],
           error: "",
