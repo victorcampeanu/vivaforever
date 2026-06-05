@@ -139,6 +139,8 @@ const PAGE = `<!doctype html>
     .composerOptions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
     .composerOptions select { width:auto; max-width:100%; }
     .layout { display:grid; grid-template-columns:300px minmax(0,1fr); min-height:100vh; }
+    .desktopNewsBtn { position:fixed; top:14px; right:16px; z-index:12; width:auto; padding:8px 12px; border:1px solid rgba(214,179,90,.42); border-radius:999px; background:rgba(23,25,31,.88); color:var(--accent); text-decoration:none; font-size:14px; font-weight:650; backdrop-filter:blur(12px); box-shadow:0 10px 34px rgba(0,0,0,.24); }
+    .desktopNewsBtn:hover { background:#242116; border-color:var(--accent); }
     .mobileTopbar, .sidebarBackdrop { display:none; }
     .sidebar { position:sticky; top:0; height:100vh; max-height:100vh; overflow:auto; border-right:1px solid var(--line); background:#0d0e12; }
     .sidebarCard { padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; }
@@ -208,6 +210,7 @@ const PAGE = `<!doctype html>
     @media (max-width:850px) {
       main { padding-top:0; }
       #app { padding-top:56px; }
+      .desktopNewsBtn { display:none; }
       .mobileTopbar { position:fixed; top:0; left:0; right:0; width:100%; height:56px; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); background:rgba(13,14,18,.96); backdrop-filter:blur(14px); }
       .mobileNavBtn { appearance:none; -webkit-appearance:none; width:auto; margin:0; padding:9px 12px; border-radius:999px; background:#17191f; color:var(--text); border:1px solid var(--line); font-size:14px; line-height:1; font-weight:650; white-space:nowrap; }
       .mobileNavBtn.primary { background:var(--accent); color:#111; border:0; }
@@ -252,6 +255,7 @@ const PAGE = `<!doctype html>
   </section>
 
   <section id="app" style="display:none">
+    <a class="desktopNewsBtn" href="/casa-publica">Casa Publica</a>
     <div class="mobileTopbar">
       <button id="mobileSidebarBtn" class="mobileNavBtn primary">Articole</button>
       <button id="mobileBackBtn" class="mobileNavBtn" hidden>← Subiect nou</button>
@@ -344,6 +348,7 @@ let selectedId = null;
 let currentJob = null;
 let timer = null;
 let allJobs = [];
+const initialArticleId = new URLSearchParams(location.search).get('article') || '';
 
 function headers() { return {'content-type':'application/json', 'x-politic-password': password}; }
 async function api(path, opts={}) {
@@ -463,6 +468,11 @@ async function login() {
     $('login').style.display = 'none';
     $('app').style.display = '';
     await refreshJobs();
+    if (initialArticleId && !selectedId) {
+      selectedId = initialArticleId;
+      await loadJob(initialArticleId).catch(() => { selectedId = null; clearViewer(); });
+      await refreshJobs();
+    }
     timer = setInterval(tick, 5000);
   } catch (e) {
     document.documentElement.classList.remove('hasSavedPassword');
@@ -661,6 +671,147 @@ $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login();
 if (password) { $('password').value = password; login(); }
 </script>
 </body>
+
+</html>`;
+
+const NEWSPAPER_PAGE = `<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Casa Publica</title>
+  <script>try { if (localStorage.getItem('politic_password')) document.documentElement.classList.add('hasSavedPassword'); } catch (_) {}</script>
+  <style>
+    :root { color-scheme:light; --paper:#f2ead8; --ink:#191511; --muted:#6f6658; --rule:#21170f; --accent:#9b1d1d; --gold:#b88a2e; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:#15110d; color:var(--ink); font:17px/1.52 Georgia, 'Times New Roman', serif; }
+    a { color:inherit; }
+    .loginShell { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:#15110d; color:#f4ead7; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+    .loginCard { width:min(360px,100%); padding:26px; border:1px solid rgba(244,234,215,.18); border-radius:20px; background:#201a14; }
+    .loginCard h2 { text-align:center; margin:0 0 18px; font-size:22px; font-family:system-ui,-apple-system,Segoe UI,sans-serif; color:rgba(244,234,215,.82); }
+    .loginInputWrap { position:relative; }
+    input, button { width:100%; border-radius:10px; border:1px solid rgba(244,234,215,.18); background:#120f0c; color:#f4ead7; padding:12px; font:16px system-ui,-apple-system,Segoe UI,sans-serif; }
+    #password { text-align:center; padding-right:58px; }
+    #loginBtn { position:absolute; right:10px; top:50%; transform:translateY(-50%); width:36px; min-width:0; height:36px; border-radius:999px; padding:0; margin:0; background:var(--gold); color:#15110d; border:0; font-weight:800; cursor:pointer; }
+    #loginErr { margin-top:14px; text-align:center; color:#e48a8a; font:14px system-ui,-apple-system,Segoe UI,sans-serif; }
+    .hasSavedPassword #login { display:none; }
+    #paper { display:none; width:min(1480px, calc(100% - 34px)); margin:18px auto 40px; padding:28px 34px 42px; background:var(--paper); box-shadow:0 30px 90px rgba(0,0,0,.42); }
+    .topNav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:12px; border-bottom:3px double var(--rule); font:13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+    .back { text-decoration:none; border:1px solid rgba(25,21,17,.28); border-radius:999px; padding:7px 11px; color:var(--ink); letter-spacing:0; text-transform:none; font-weight:700; }
+    .masthead { text-align:center; padding:18px 0 12px; border-bottom:1px solid var(--rule); }
+    .masthead h1 { margin:0; font-size:clamp(64px, 8.5vw, 126px); line-height:.86; letter-spacing:-.07em; font-weight:900; text-transform:uppercase; }
+    .deck { display:flex; justify-content:center; gap:18px; margin-top:12px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+    .leadGrid { display:grid; grid-template-columns:1.35fr .8fr .8fr; gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); }
+    .story { min-width:0; }
+    .story a { text-decoration:none; }
+    .storyImage { width:100%; aspect-ratio:16/9; object-fit:cover; filter:grayscale(1) contrast(1.08); border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
+    .kicker { margin-bottom:6px; color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+    .story h2, .story h3 { margin:0; font-weight:900; letter-spacing:-.035em; line-height:.94; }
+    .lead h2 { font-size:clamp(42px, 5.4vw, 82px); }
+    .sideLead h3 { font-size:34px; }
+    .snippet { margin:10px 0 0; color:#302820; }
+    .meta { margin-top:10px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; }
+    .belowGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; padding-top:20px; }
+    .belowGrid .story { padding-right:14px; border-right:1px solid rgba(25,21,17,.28); }
+    .belowGrid .story:last-child { border-right:0; }
+    .belowGrid h3 { font-size:25px; }
+    .smallStories { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:22px; padding-top:18px; border-top:1px solid rgba(25,21,17,.38); }
+    .smallStories h3 { font-size:21px; line-height:1; }
+    .loading, .empty { padding:40px 0; text-align:center; color:var(--muted); font:15px system-ui,-apple-system,Segoe UI,sans-serif; }
+    @media (max-width:900px) {
+      #paper { width:100%; margin:0; padding:18px 16px 34px; }
+      .leadGrid, .belowGrid, .smallStories { grid-template-columns:1fr; }
+      .belowGrid .story { border-right:0; border-bottom:1px solid rgba(25,21,17,.28); padding:0 0 16px; }
+      .masthead h1 { font-size:54px; letter-spacing:-.05em; }
+      .lead h2 { font-size:42px; }
+    }
+  </style>
+</head>
+<body>
+  <section id="login" class="loginShell">
+    <div class="loginCard">
+      <h2>Acces privat</h2>
+      <div class="loginInputWrap">
+        <input id="password" type="password" placeholder="Parolă" autocomplete="current-password">
+        <button id="loginBtn" title="Intră" aria-label="Intră">↑</button>
+      </div>
+      <div id="loginErr"></div>
+    </div>
+  </section>
+  <main id="paper">
+    <div class="topNav"><a class="back" href="/">← Generator</a><span id="issueDate"></span><span>Ediție de test</span></div>
+    <header class="masthead"><h1>Casa Publica</h1><div class="deck"><span>Politică</span><span>Analiză</span><span>Arhivă vie</span></div></header>
+    <div id="newsContent" class="loading">Se încarcă ediția...</div>
+  </main>
+<script>
+const $ = (id) => document.getElementById(id);
+let password = localStorage.getItem('politic_password') || '';
+function headers() { return {'content-type':'application/json', 'x-politic-password': password}; }
+async function api(path, opts={}) {
+  const res = await fetch(path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function stripInlineSourceSection(text) {
+  return String(text || '').replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Surse\\s*\\n[\\s\\S]*$', 'i'), '').trim();
+}
+function snippet(text, max) {
+  const clean = stripInlineSourceSection(text).replace(new RegExp('[#*_]', 'g'), '').replace(new RegExp('\\s+', 'g'), ' ').trim();
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).replace(new RegExp('\\s+\\S*$'), '') + '...';
+}
+function dateLabel(job) {
+  const raw = job.completed_at || job.created_at || '';
+  const d = raw ? new Date(raw) : null;
+  if (!d || Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('ro-RO', { day:'2-digit', month:'long', year:'numeric' });
+}
+function story(job, cls, img) {
+  const title = escapeHtml(job.title || job.subject || 'Articol');
+  const text = escapeHtml(snippet(job.article_text || '', cls === 'lead' ? 430 : 230));
+  const image = img && job.image_data_url ? '<img class="storyImage" src="' + job.image_data_url + '" alt="">' : '';
+  return '<article class="story ' + cls + '"><a href="/?article=' + encodeURIComponent(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
+}
+async function loadPaper() {
+  const list = await api('/api/jobs');
+  const done = (list.jobs || []).filter(j => j.status === 'done').slice(0, 12);
+  if (!done.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
+  const jobs = await Promise.all(done.map(j => api('/api/jobs/' + encodeURIComponent(j.id)).catch(() => null)));
+  const full = jobs.filter(Boolean);
+  const lead = full[0];
+  const side = full.slice(1, 3);
+  const below = full.slice(3, 7);
+  const small = full.slice(7, 12);
+  let html = '<section class="leadGrid">' + story(lead, 'lead', true) + side.map(j => story(j, 'sideLead', true)).join('') + '</section>';
+  if (below.length) html += '<section class="belowGrid">' + below.map(j => story(j, 'column', true)).join('') + '</section>';
+  if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false)).join('') + '</section>';
+  $('newsContent').className = '';
+  $('newsContent').innerHTML = html;
+}
+async function login() {
+  password = $('password').value || password;
+  try {
+    await api('/api/jobs');
+    localStorage.setItem('politic_password', password);
+    $('login').style.display = 'none';
+    $('paper').style.display = 'block';
+    $('issueDate').textContent = new Date().toLocaleDateString('ro-RO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+    await loadPaper();
+  } catch (e) {
+    document.documentElement.classList.remove('hasSavedPassword');
+    $('paper').style.display = 'none';
+    $('login').style.display = 'flex';
+    $('loginErr').textContent = 'Parolă greșită sau API indisponibil.';
+  }
+}
+$('loginBtn').onclick = login;
+$('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+if (password) { $('password').value = password; login(); }
+</script>
+</body>
 </html>`;
 
 export default {
@@ -673,6 +824,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders(request) });
 
     if (url.pathname === "/" || url.pathname === "/index.html") return html(PAGE);
+    if (url.pathname === "/casa-publica" || url.pathname === "/casa-publica/") return html(NEWSPAPER_PAGE);
     if (url.pathname === "/robots.txt") return new Response("User-agent: *\nDisallow: /\n", { headers: { "content-type": "text/plain", "x-robots-tag": "noindex, nofollow, noarchive" } });
 
     if (url.pathname.startsWith("/api/agent/")) {
