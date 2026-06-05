@@ -410,6 +410,17 @@ function autoResizeSubject() {
   el.style.overflowY = 'hidden';
 }
 
+function randomizeExamples() {
+  const items = Array.from(document.querySelectorAll('.example'));
+  items
+    .map(el => ({ el, rank: Math.random() }))
+    .sort((a, b) => a.rank - b.rank)
+    .forEach((item, index) => {
+      item.el.hidden = index >= 2;
+      item.el.parentNode?.appendChild(item.el);
+    });
+}
+
 function scrollArticleIntoView() {
   if (window.matchMedia('(max-width:850px)').matches) {
     window.scrollTo({ top:0, behavior:'smooth' });
@@ -632,6 +643,7 @@ $('generateImageBtn').onclick = requestImage;
 $('subject').addEventListener('input', autoResizeSubject);
 $('articleSearch').addEventListener('input', () => renderJobs(allJobs));
 $('subject').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) createJob(); });
+randomizeExamples();
 document.querySelectorAll('.example').forEach(el => el.onclick = () => { $('subject').value = el.dataset.example || ''; autoResizeSubject(); $('subject').focus(); });
 $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 if (password) { $('password').value = password; login(); }
