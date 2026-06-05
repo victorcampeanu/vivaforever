@@ -38,6 +38,34 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function normalizeHeadingText(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^#{1,6}\s+/, '')
+    .replace(/[*_`~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('ro-RO')
+    .replace(/^[\s.,:;!?—–\-"'()[\]{}]+|[\s.,:;!?—–\-"'()[\]{}]+$/g, '');
+}
+
+function stripDuplicateLeadingTitle(articleText, title) {
+  const titleNorm = normalizeHeadingText(title);
+  const text = String(articleText || '').trimStart();
+  if (!text || !titleNorm) return text;
+  const lines = text.split(/\r?\n/);
+  const firstIndex = lines.findIndex((line) => line.trim());
+  if (firstIndex < 0) return '';
+  if (normalizeHeadingText(lines[firstIndex]) !== titleNorm) return text;
+  lines.splice(firstIndex, 1);
+  while (firstIndex < lines.length && !lines[firstIndex].trim()) lines.splice(firstIndex, 1);
+  return lines.join('\n').trim();
+}
+
+function cleanArticleTextForTitle(articleText, title) {
+  return stripDuplicateLeadingTitle(articleText, title);
+}
+
 function corsHeaders(request) {
   const origin = request.headers.get("origin") || "";
   if (origin === "https://politic.vivaforever.ro") {
@@ -413,6 +441,31 @@ function stripInlineSourceSection(text) {
     .replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Sources\\s*\\n[\\s\\S]*$', 'i'), '')
     .trim();
 }
+function normalizeInlineHeading(value) {
+  return String(value || '')
+    .trim()
+    .replace(new RegExp('^#{1,6}\\s+'), '')
+    .replace(new RegExp('[*_~]', 'g'), '')
+    .replace(new RegExp('\\s+', 'g'), ' ')
+    .trim()
+    .toLocaleLowerCase('ro-RO')
+    .replace(new RegExp('^[\\s.,:;!?—–\\-"()\\[\\]{}]+|[\\s.,:;!?—–\\-"()\\[\\]{}]+$', 'g'), '');
+}
+function stripDuplicateInlineTitle(text, title) {
+  const titleNorm = normalizeInlineHeading(title);
+  const value = String(text || '').trimStart();
+  if (!value || !titleNorm) return value;
+  const lines = value.split(new RegExp('\\r?\\n'));
+  const firstIndex = lines.findIndex(line => line.trim());
+  if (firstIndex < 0) return '';
+  if (normalizeInlineHeading(lines[firstIndex]) !== titleNorm) return value;
+  lines.splice(firstIndex, 1);
+  while (firstIndex < lines.length && !lines[firstIndex].trim()) lines.splice(firstIndex, 1);
+  return lines.join('\\n').trim();
+}
+function articleTextForDisplay(job) {
+  return stripDuplicateInlineTitle(stripInlineSourceSection(job?.article_text || ''), job?.title || job?.subject || '');
+}
 function estimatedDoneText(job) {
   const base = job.created_at ? new Date(job.created_at) : new Date();
   const estimated = new Date(base.getTime() + 7 * 60 * 1000);
@@ -615,7 +668,7 @@ async function loadJob(id) {
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
   const waitingText = job.status === 'done' ? '' : estimatedDoneText(job);
-  const articleText = stripInlineSourceSection(job.article_text || '');
+  const articleText = articleTextForDisplay(job);
   $('articleBody').className = articleText ? '' : (waitingText ? 'waitingText' : '');
   $('articleBody').textContent = articleText || waitingText;
   renderSources(job.status === 'done' ? job.sources : []);
@@ -786,8 +839,33 @@ function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'
 function stripInlineSourceSection(text) {
   return String(text || '').replace(new RegExp('\\n{2,}(?:#{1,6}\\s*)?Surse\\s*\\n[\\s\\S]*$', 'i'), '').trim();
 }
-function snippet(text, max) {
-  const clean = stripInlineSourceSection(text).replace(new RegExp('[#*_]', 'g'), '').replace(new RegExp('\\s+', 'g'), ' ').trim();
+function normalizeInlineHeading(value) {
+  return String(value || '')
+    .trim()
+    .replace(new RegExp('^#{1,6}\\s+'), '')
+    .replace(new RegExp('[*_~]', 'g'), '')
+    .replace(new RegExp('\\s+', 'g'), ' ')
+    .trim()
+    .toLocaleLowerCase('ro-RO')
+    .replace(new RegExp('^[\\s.,:;!?—–\\-"()\\[\\]{}]+|[\\s.,:;!?—–\\-"()\\[\\]{}]+$', 'g'), '');
+}
+function stripDuplicateInlineTitle(text, title) {
+  const titleNorm = normalizeInlineHeading(title);
+  const value = String(text || '').trimStart();
+  if (!value || !titleNorm) return value;
+  const lines = value.split(new RegExp('\\r?\\n'));
+  const firstIndex = lines.findIndex(line => line.trim());
+  if (firstIndex < 0) return '';
+  if (normalizeInlineHeading(lines[firstIndex]) !== titleNorm) return value;
+  lines.splice(firstIndex, 1);
+  while (firstIndex < lines.length && !lines[firstIndex].trim()) lines.splice(firstIndex, 1);
+  return lines.join('\\n').trim();
+}
+function articleTextForDisplay(job) {
+  return stripDuplicateInlineTitle(stripInlineSourceSection(job?.article_text || ''), job?.title || job?.subject || '');
+}
+function snippet(job, max) {
+  const clean = articleTextForDisplay(job).replace(new RegExp('[#*_]', 'g'), '').replace(new RegExp('\\s+', 'g'), ' ').trim();
   if (clean.length <= max) return clean;
   return clean.slice(0, max).replace(new RegExp('\\s+\\S*$'), '') + '...';
 }
@@ -805,7 +883,7 @@ function storySnippetLength(cls) {
 }
 function story(job, cls, img) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
-  const text = escapeHtml(snippet(job.article_text || '', storySnippetLength(cls)));
+  const text = escapeHtml(snippet(job, storySnippetLength(cls)));
   const image = img && job.image_data_url ? '<img class="storyImage" src="' + job.image_data_url + '" alt="">' : '';
   return '<article class="story ' + cls + '"><a class="storyLink" href="#" data-id="' + escapeHtml(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
 }
@@ -840,7 +918,7 @@ function openArticleModal(id) {
   $('modalKicker').textContent = job.source === 'archive' ? 'Arhivă' : 'Actual';
   $('modalTitle').textContent = job.title || job.subject || 'Articol';
   $('modalMeta').textContent = dateLabel(job);
-  $('modalBody').textContent = stripInlineSourceSection(job.article_text || '');
+  $('modalBody').textContent = articleTextForDisplay(job);
   if (job.image_data_url) { $('modalImage').src = job.image_data_url; $('modalImage').hidden = false; }
   else { $('modalImage').removeAttribute('src'); $('modalImage').hidden = true; }
   renderModalSources(job.sources);
@@ -994,12 +1072,13 @@ export default {
         const job = await loadJob(env, id);
         if (!job) return json({ error: "not found" }, 404);
         const body = await request.json();
+        const completeTitle = body.title || job.title;
         Object.assign(job, {
           status: "done",
           completed_at: nowIso(),
-          title: body.title || job.title,
+          title: completeTitle,
           topic: body.topic || job.subject,
-          article_text: body.article_text || "",
+          article_text: cleanArticleTextForTitle(body.article_text || "", completeTitle),
           markdown_path: body.markdown_path || "",
           image_path: "",
           image_data_url: "",
@@ -1024,7 +1103,7 @@ export default {
           const id = String(raw.id).slice(0, 160);
           const title = String(raw.title || raw.subject || "").trim().slice(0, 300);
           const topic = String(raw.topic || raw.subject || title).trim().slice(0, 500);
-          const articleText = String(raw.article_text || "").trim();
+          const articleText = cleanArticleTextForTitle(String(raw.article_text || "").trim(), title);
           if (!title || !articleText) continue;
           const existing = await loadJob(env, id);
           const date = String(raw.date || raw.completed_at || raw.created_at || nowIso()).slice(0, 40);
