@@ -751,7 +751,8 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .hasSavedPassword #login { display:none; }
     #paper { display:block; width:min(1480px, calc(100% - 34px)); margin:18px auto 40px; padding:28px 34px 42px; background:var(--paper); box-shadow:0 30px 90px rgba(0,0,0,.42); }
     .topNav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:12px; border-bottom:3px double var(--rule); font:13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
-    .back { text-decoration:none; border:1px solid rgba(25,21,17,.28); border-radius:999px; padding:7px 11px; color:var(--ink); letter-spacing:0; text-transform:none; font-weight:700; }
+    .back, .regenBtn { text-decoration:none; border:1px solid rgba(25,21,17,.28); border-radius:999px; padding:7px 11px; color:var(--ink); letter-spacing:0; text-transform:none; font-weight:700; background:transparent; cursor:pointer; width:auto; }
+    .issueActions { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
     .masthead { text-align:center; padding:18px 0 12px; border-bottom:1px solid var(--rule); }
     .masthead h1 { margin:0; font-size:clamp(52px, 7.2vw, 104px); line-height:.9; letter-spacing:-.055em; font-weight:900; text-transform:uppercase; }
     .deck { display:flex; justify-content:center; gap:18px; margin-top:12px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
@@ -809,7 +810,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
     </div>
   </section>
   <main id="paper">
-    <div class="topNav"><a class="back" href="/">← Generator</a><span id="issueDate"></span><span>Ediție de test</span></div>
+    <div class="topNav"><a class="back" href="/">← Generator</a><span id="issueDate"></span><div class="issueActions"><button id="regenIssue" class="regenBtn" type="button">Regenerează</button><span>Ediție aleatorie</span></div></div>
     <header class="masthead"><h1>Casa Publica</h1><div class="deck"><span>Politică</span><span>Analiză</span><span>Arhivă vie</span></div></header>
     <div id="newsContent" class="loading">Se încarcă ediția...</div>
   </main>
@@ -828,6 +829,7 @@ const NEWSPAPER_PAGE = `<!doctype html>
 const $ = (id) => document.getElementById(id);
 let password = localStorage.getItem('politic_password') || '';
 let fullJobs = [];
+let paperPool = [];
 async function api(path, opts={}) {
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
@@ -875,10 +877,10 @@ function dateLabel(job) {
   return d.toLocaleDateString('ro-RO', { day:'2-digit', month:'long', year:'numeric' });
 }
 function storySnippetLength(cls) {
-  if (cls === 'lead') return 1400;
-  if (cls === 'sideLead') return 850;
-  if (cls === 'column') return 650;
-  return 460;
+  if (cls === 'lead') return 680;
+  if (cls === 'sideLead') return 360;
+  if (cls === 'column') return 260;
+  return 180;
 }
 function story(job, cls, img) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
@@ -928,9 +930,14 @@ function closeArticleModal() {
   $('articleModalBackdrop').hidden = true;
   document.body.classList.remove('modalOpen');
 }
-async function loadPaper() {
-  const list = await api('/api/public/casa-publica');
-  const full = (list.jobs || []).filter(j => j.status === 'done').slice(0, 12);
+function shuffledJobs(list) {
+  return Array.from(list || [])
+    .map(job => ({ job, rank: Math.random() }))
+    .sort((a, b) => a.rank - b.rank)
+    .map(item => item.job);
+}
+function renderPaperIssue(sourceJobs) {
+  const full = shuffledJobs(sourceJobs).filter(j => j.status === 'done').slice(0, 12);
   if (!full.length) { $('newsContent').className = 'empty'; $('newsContent').textContent = 'Niciun articol publicat încă.'; return; }
   fullJobs = full;
   const lead = full[0];
@@ -947,6 +954,11 @@ async function loadPaper() {
     openArticleModal(el.dataset.id);
   });
 }
+async function loadPaper() {
+  const list = await api('/api/public/casa-publica?limit=60');
+  paperPool = (list.jobs || []).filter(j => j.status === 'done');
+  renderPaperIssue(paperPool);
+}
 async function startPublicPaper() {
   $('issueDate').textContent = new Date().toLocaleDateString('ro-RO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
   try {
@@ -957,6 +969,7 @@ async function startPublicPaper() {
   }
 }
 $('modalClose').onclick = closeArticleModal;
+$('regenIssue').onclick = () => renderPaperIssue(paperPool);
 $('articleModalBackdrop').onclick = e => { if (e.target.id === 'articleModalBackdrop') closeArticleModal(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('articleModalBackdrop').hidden) closeArticleModal(); });
 startPublicPaper();
@@ -978,6 +991,8 @@ export default {
     if (url.pathname === "/robots.txt") return new Response("User-agent: *\nDisallow: /\n", { headers: { "content-type": "text/plain", "x-robots-tag": "noindex, nofollow, noarchive" } });
 
     if (url.pathname === "/api/public/casa-publica" && request.method === "GET") {
+      const requestedLimit = Number.parseInt(url.searchParams.get("limit") || "60", 10);
+      const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 60, 12), 80);
       const ids = await loadIndex(env);
       const jobs = [];
       for (const id of ids) {
@@ -997,7 +1012,7 @@ export default {
           sources: Array.isArray(job.sources) ? job.sources.slice(0, 20) : [],
           image_data_url: job.image_data_url || "",
         });
-        if (jobs.length >= 12) break;
+        if (jobs.length >= limit) break;
       }
       jobs.sort((a, b) => String(b.completed_at || b.created_at || "").localeCompare(String(a.completed_at || a.created_at || "")));
       return json({ jobs });
