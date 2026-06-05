@@ -756,19 +756,15 @@ const NEWSPAPER_PAGE = `<!doctype html>
     .masthead { text-align:center; padding:18px 0 12px; border-bottom:1px solid var(--rule); }
     .masthead h1 { margin:0; font-size:clamp(52px, 7.2vw, 104px); line-height:.9; letter-spacing:-.055em; font-weight:900; text-transform:uppercase; }
     .deck { display:flex; justify-content:center; gap:18px; margin-top:12px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-    .leadGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); align-items:start; }
+    .leadGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:22px 0; border-bottom:2px solid var(--rule); align-items:stretch; }
     .story { min-width:0; }
-    .story a { display:block; text-decoration:none; }
-    .storyImage { width:100%; aspect-ratio:16/10; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; }
+    .story a { height:100%; display:flex; flex-direction:column; text-decoration:none; }
+    .storyImage { width:100%; aspect-ratio:16/10; object-fit:cover; border:1px solid rgba(25,21,17,.32); margin-bottom:10px; background:#d8c9aa; flex:0 0 auto; }
     .kicker { margin-bottom:6px; color:var(--accent); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
     .story h2, .story h3 { margin:0; font-family:Georgia, 'Times New Roman', serif; font-weight:700; letter-spacing:0; line-height:1.1; font-variant-ligatures:none; font-feature-settings:'liga' 0, 'clig' 0, 'dlig' 0, 'hlig' 0; }
     .lead h2 { font-size:clamp(24px, 2.25vw, 34px); }
     .sideLead h3 { font-size:clamp(24px, 2.25vw, 34px); }
     .snippet { margin:12px 0 0; color:#302820; font-size:16px; line-height:1.48; text-align:justify; text-justify:inter-word; hyphens:auto; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
-    .lead .snippet { -webkit-line-clamp:6; }
-    .sideLead .snippet { -webkit-line-clamp:6; }
-    .column .snippet { -webkit-line-clamp:5; }
-    .small .snippet { -webkit-line-clamp:4; }
     .meta { margin-top:10px; color:var(--muted); font:12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif; text-transform:uppercase; letter-spacing:.08em; }
     .belowGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; padding-top:20px; }
     .belowGrid .story { padding-right:14px; border-right:1px solid rgba(25,21,17,.28); }
@@ -882,17 +878,19 @@ function dateLabel(job) {
   if (!d || Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('ro-RO', { day:'2-digit', month:'long', year:'numeric' });
 }
-function storySnippetLength(cls) {
-  if (cls === 'lead') return 320;
-  if (cls === 'sideLead') return 320;
-  if (cls === 'column') return 240;
-  return 170;
+function storyTextBudget(job, cls, img, lines) {
+  const titleLength = String(job?.title || job?.subject || '').length;
+  const perLine = cls === 'small' ? 54 : (cls === 'column' ? 48 : 56);
+  const titlePenalty = Math.max(0, Math.ceil((titleLength - 42) / 16)) * perLine;
+  const base = Math.max(120, (lines || 6) * perLine - titlePenalty);
+  return img ? Math.min(base, 360) : Math.min(base + 180, 760);
 }
-function story(job, cls, img) {
+function story(job, cls, img, lines) {
   const title = escapeHtml(job.title || job.subject || 'Articol');
-  const text = escapeHtml(snippet(job, storySnippetLength(cls)));
+  const text = escapeHtml(snippet(job, storyTextBudget(job, cls, img, lines)));
   const image = img && job.image_data_url ? '<img class="storyImage" src="' + job.image_data_url + '" alt="">' : '';
-  return '<article class="story ' + cls + '"><a class="storyLink" href="#" data-id="' + escapeHtml(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
+  const clamp = Math.max(3, Math.min(lines || 6, 16));
+  return '<article class="story ' + cls + '"><a class="storyLink" href="#" data-id="' + escapeHtml(job.id) + '">' + image + '<div class="kicker">' + escapeHtml(job.source === 'archive' ? 'Arhivă' : 'Actual') + '</div><h' + (cls === 'lead' ? '2' : '3') + '>' + title + '</h' + (cls === 'lead' ? '2' : '3') + '><p class="snippet" style="-webkit-line-clamp:' + clamp + '">' + text + '</p><div class="meta">' + escapeHtml(dateLabel(job)) + '</div></a></article>';
 }
 function sourceUrl(source) {
   if (!source) return '';
@@ -960,9 +958,15 @@ function renderPaperIssue(sourceJobs) {
   const side = compactFull.slice(1, 3);
   const below = compactFull.slice(3, 7);
   const small = shuffledJobs(compactFull.slice(7, 12));
-  let html = '<section class="leadGrid">' + story(lead, 'lead', true) + side.map((j, index) => story(j, 'sideLead', index === 1)).join('') + '</section>';
-  if (below.length) html += '<section class="belowGrid">' + below.map((j, index) => story(j, 'column', index % 2 === 1)).join('') + '</section>';
-  if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false)).join('') + '</section>';
+  const topSlots = [
+    { job: lead, cls: 'lead', img: true, lines: 6 },
+    { job: side[0], cls: 'sideLead', img: false, lines: 14 },
+    { job: side[1], cls: 'sideLead', img: true, lines: 6 },
+  ].filter(slot => slot.job);
+  const belowSlots = below.map((j, index) => ({ job: j, cls: 'column', img: index % 2 === 1, lines: index % 2 === 1 ? 5 : 11 }));
+  let html = '<section class="leadGrid">' + topSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
+  if (belowSlots.length) html += '<section class="belowGrid">' + belowSlots.map(slot => story(slot.job, slot.cls, slot.img, slot.lines)).join('') + '</section>';
+  if (small.length) html += '<section class="smallStories">' + small.map(j => story(j, 'small', false, 6)).join('') + '</section>';
   $('newsContent').className = '';
   $('newsContent').innerHTML = html;
   document.querySelectorAll('.storyLink').forEach(el => el.onclick = (event) => {
