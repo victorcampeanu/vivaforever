@@ -75,7 +75,7 @@ async function loadIndex(env) {
 }
 
 async function saveIndex(env, ids) {
-  const unique = [...new Set(ids)].slice(0, 100);
+  const unique = [...new Set(ids)].slice(0, 500);
   await env.POLITIC_KV.put(INDEX_KEY, JSON.stringify(unique));
 }
 
@@ -778,6 +778,48 @@ export default {
         return json({ ok: true });
       }
 
+      if (url.pathname === "/api/agent/archive" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const items = Array.isArray(body.items) ? body.items : [];
+        const ids = await loadIndex(env);
+        const imported = [];
+        for (const raw of items.slice(0, 250)) {
+          if (!raw || !raw.id) continue;
+          const id = String(raw.id).slice(0, 160);
+          const title = String(raw.title || raw.subject || "").trim().slice(0, 300);
+          const topic = String(raw.topic || raw.subject || title).trim().slice(0, 500);
+          const articleText = String(raw.article_text || "").trim();
+          if (!title || !articleText) continue;
+          const existing = await loadJob(env, id);
+          const date = String(raw.date || raw.completed_at || raw.created_at || nowIso()).slice(0, 40);
+          const createdAt = date.length === 10 ? `${date}T12:00:00.000Z` : date;
+          const job = {
+            ...(existing || {}),
+            id,
+            source: "archive",
+            subject: topic,
+            topic,
+            title,
+            status: "done",
+            article_text: articleText,
+            sources: Array.isArray(raw.sources) ? raw.sources.slice(0, 20) : [],
+            markdown_path: raw.markdown_path || "",
+            image_path: raw.image_path || existing?.image_path || "",
+            image_data_url: existing?.image_data_url || "",
+            image_status: existing?.image_data_url ? "done" : "idle",
+            image_prompt: raw.image_prompt || existing?.image_prompt || "",
+            created_at: existing?.created_at || createdAt,
+            completed_at: raw.completed_at || existing?.completed_at || createdAt,
+            updated_at: nowIso(),
+            error: "",
+          };
+          await saveJob(env, job);
+          imported.push(id);
+        }
+        await saveIndex(env, [...imported, ...ids]);
+        return json({ ok: true, imported: imported.length });
+      }
+
       if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/fail$/) && request.method === "POST") {
         const id = decodeURIComponent(url.pathname.split("/")[4]);
         const job = await loadJob(env, id);
@@ -802,8 +844,9 @@ export default {
         const jobs = [];
         for (const id of ids) {
           const job = await loadJob(env, id);
-          if (job) jobs.push({ id: job.id, subject: job.subject, title: job.title, tone: job.tone, viewpoint: job.viewpoint, status: job.status, created_at: job.created_at, completed_at: job.completed_at });
+          if (job) jobs.push({ id: job.id, source: job.source || "manual", subject: job.subject, title: job.title, tone: job.tone, viewpoint: job.viewpoint, status: job.status, created_at: job.created_at, completed_at: job.completed_at });
         }
+        jobs.sort((a, b) => String(b.completed_at || b.created_at || "").localeCompare(String(a.completed_at || a.created_at || "")));
         return json({ jobs }, 200, corsHeaders(request));
       }
 
