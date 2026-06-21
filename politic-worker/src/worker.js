@@ -63,8 +63,27 @@ function stripDuplicateLeadingTitle(articleText, title) {
   return lines.join('\n').trim();
 }
 
+function stripLeadingToolErrors(articleText) {
+  const lines = String(articleText || '').split(/\r?\n/);
+  const isNoise = (line) => /^(curl:\s*\(\d+\)|HTTP\/\d(?:\.\d)?\s+\d+|Traceback\s|exception:|\[Errno\s+)/i.test(String(line || '').trim());
+  while (lines.length) {
+    const first = String(lines[0] || '').trim();
+    if (!first) {
+      lines.shift();
+      continue;
+    }
+    if (isNoise(first) || /requested URL returned error:\s*\d+/i.test(first)) {
+      lines.shift();
+      while (lines.length && !String(lines[0] || '').trim()) lines.shift();
+      continue;
+    }
+    break;
+  }
+  return lines.join('\n').trim();
+}
+
 function cleanArticleTextForTitle(articleText, title) {
-  return stripDuplicateLeadingTitle(articleText, title);
+  return stripLeadingToolErrors(stripDuplicateLeadingTitle(articleText, title));
 }
 
 function corsHeaders(request) {
@@ -1274,7 +1293,11 @@ export default {
           updated_at: nowIso(),
         });
         await saveJobWithIndex(env, job);
-        await rebuildPublicFeed(env);
+        try {
+          await rebuildPublicFeed(env);
+        } catch (e) {
+          console.warn("public feed rebuild after complete failed", e);
+        }
         return json({ ok: true });
       }
 
@@ -1316,8 +1339,47 @@ export default {
           await saveJobWithIndex(env, job);
           imported.push(id);
         }
-        await rebuildPublicFeed(env);
+        try {
+          await rebuildPublicFeed(env);
+        } catch (e) {
+          console.warn("public feed rebuild after archive import failed", e);
+        }
         return json({ ok: true, imported: imported.length });
+      }
+
+      if (url.pathname === "/api/agent/repair-completed-articles" && request.method === "POST") {
+        const entries = await hydrateIndexMetadata(env, await loadIndexEntries(env));
+        let repaired = 0;
+        let cleaned = 0;
+        for (const entry of entries) {
+          const job = await loadJob(env, entry.id);
+          if (!job) continue;
+          const title = job.title || job.subject || "";
+          const articleText = cleanArticleTextForTitle(job.article_text || "", title);
+          let changed = false;
+          if (articleText && articleText !== (job.article_text || "")) {
+            job.article_text = articleText;
+            cleaned += 1;
+            changed = true;
+          }
+          if (job.status === "failed" && articleText && articleText.length > 1000) {
+            job.status = "done";
+            job.error = "";
+            job.completed_at = job.completed_at || nowIso();
+            repaired += 1;
+            changed = true;
+          }
+          if (changed) {
+            job.updated_at = nowIso();
+            await saveJobWithIndex(env, job);
+          }
+        }
+        try {
+          await rebuildPublicFeed(env);
+        } catch (e) {
+          console.warn("public feed rebuild after repair failed", e);
+        }
+        return json({ ok: true, repaired, cleaned });
       }
 
       if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/fail$/) && request.method === "POST") {
@@ -1327,6 +1389,11 @@ export default {
         const body = await request.json().catch(() => ({}));
         job.status = "failed";
         job.error = String(body.error || "failed").slice(0, 5000);
+        if (job.article_text && String(job.article_text).trim().length > 1000) {
+          job.article_text = cleanArticleTextForTitle(job.article_text, job.title || job.subject || "");
+          job.status = "done";
+          job.error = "";
+        }
         job.completed_at = nowIso();
         job.updated_at = nowIso();
         await saveJobWithIndex(env, job);
