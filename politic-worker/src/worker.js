@@ -644,6 +644,14 @@ function estimatedDoneText(job) {
   const time = estimated.toLocaleTimeString('ro-RO', { hour:'2-digit', minute:'2-digit' });
   return 'Se estimează că va fi gata la ' + time + '. Pagina se actualizează automat.';
 }
+function isGeneratingStatus(status) {
+  return status === 'queued' || status === 'running' || status === 'claimed';
+}
+function jobDisplayTitle(job) {
+  if (isGeneratingStatus(job?.status)) return 'Articol în curs de generare';
+  if (job?.status === 'failed') return job?.title || 'Articol eșuat';
+  return job?.title || job?.subject || 'Articol';
+}
 function autoResizeSubject() {
   const el = $('subject');
   if (!el) return;
@@ -749,9 +757,9 @@ function renderJobs(jobs) {
   $('jobs').innerHTML = visibleJobs.length ? visibleJobs.map(j => {
     const active = selectedId === j.id ? ' active' : '';
     const id = escapeHtml(j.id);
-    const title = escapeHtml(j.title || j.subject);
-    const subject = j.title && j.subject && j.title !== j.subject ? '<span class="jobSubject">' + escapeHtml(j.subject) + '</span>' : '';
-    const statusLabel = (j.status === 'queued' || j.status === 'running') ? 'se generează' : j.status;
+    const title = escapeHtml(jobDisplayTitle(j));
+    const subject = j.status === 'done' && j.title && j.subject && j.title !== j.subject ? '<span class="jobSubject">' + escapeHtml(j.subject) + '</span>' : '';
+    const statusLabel = isGeneratingStatus(j.status) ? 'se generează' : j.status;
     const status = j.status === 'done' ? '' : '<span class="status">' + escapeHtml(statusLabel) + '</span>';
     return '<div class="job' + active + '" data-id="' + id + '"><div class="jobMain"><span class="jobTitle">' + title + '</span>' + subject + status + '</div><div class="jobActions"><button class="jobActionBtn" data-action-id="' + id + '" title="Actions" aria-label="Actions">⋯</button><div class="jobMenu" data-menu-id="' + id + '" hidden><button class="deleteJobBtn" data-delete-id="' + id + '">Șterge</button></div></div></div>';
   }).join('') : (q ? '<span class="emptyList">Niciun rezultat.</span>' : '<span class="emptyList">Niciun articol încă.</span>');
@@ -852,10 +860,10 @@ async function loadJob(id) {
   $('content').classList.remove('emptyMode');
   $('emptyViewer').style.display = 'none';
   $('articleContent').style.display = '';
-  $('articleTitle').textContent = job.title || job.subject || 'Articol';
+  $('articleTitle').textContent = jobDisplayTitle(job);
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
-  const waitingText = (job.status === 'queued' || job.status === 'running' || job.status === 'claimed') ? estimatedDoneText(job) : '';
+  const waitingText = isGeneratingStatus(job.status) ? estimatedDoneText(job) : '';
   const articleText = articleTextForDisplay(job);
   $('articleBody').className = articleText ? '' : (waitingText ? 'waitingText' : '');
   $('articleBody').textContent = articleText || waitingText;
