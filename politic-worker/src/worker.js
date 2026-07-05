@@ -855,7 +855,7 @@ async function loadJob(id) {
   $('articleTitle').textContent = job.title || job.subject || 'Articol';
   $('articleMeta').textContent = '';
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
-  const waitingText = job.status === 'done' ? '' : estimatedDoneText(job);
+  const waitingText = (job.status === 'queued' || job.status === 'running' || job.status === 'claimed') ? estimatedDoneText(job) : '';
   const articleText = articleTextForDisplay(job);
   $('articleBody').className = articleText ? '' : (waitingText ? 'waitingText' : '');
   $('articleBody').textContent = articleText || waitingText;
