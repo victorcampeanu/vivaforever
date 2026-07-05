@@ -1,6 +1,6 @@
 const MAX_SUBJECT_LEN = 500;
 const TONE_OPTIONS = ["echilibrat", "ferm", "agresiv", "popular", "analitic", "ironie-rece"];
-const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator", "conservator-independent", "neutru-critic"];
+const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator", "conservator-independent", "crestin-religios", "neutru-critic"];
 const JOB_PREFIX = "job:";
 const INDEX_KEY = "jobs:index";
 const PUBLIC_FEED_KEY = "casa-publica:feed";
@@ -473,6 +473,7 @@ const PAGE = `<!doctype html>
               <option value="pnl">PNL</option>
               <option value="usr">USR</option>
               <option value="conservator">Conservator</option>
+              <option value="crestin-religios">Creștin religios</option>
               <option value="neutru-critic">Neutru critic</option>
             </select>
           </div>
@@ -488,6 +489,7 @@ const PAGE = `<!doctype html>
             <div class="example" data-example="Subiect: pensiile mici și costul vieții\n\nUnghi: Nu transforma pensionarii în decor electoral. Scrie despre contractul moral dintre generații și despre statul care găsește bani pentru clientelă, dar cere răbdare celor care au muncit o viață.\n\nTon: cald, popular, acuzator față de cinismul politic."><b>Pensii mici</b>Contractul moral dintre stat și cei care au muncit.</div>
             <div class="example" data-example="Subiect: digitalizarea administrației publice\n\nUnghi: Arată contrastul dintre sloganul modernizării și realitatea ghișeelor, parolelor inutile și platformelor care cad. Digitalizarea trebuie să simplifice viața cetățeanului, nu să mute birocrația pe ecran.\n\nTon: ironic rece, pragmatic, cu exemple din viața de zi cu zi."><b>Digitalizare</b>Birocrația mutată de la ghișeu pe ecran.</div>
             <div class="example" data-example="Subiect: securitatea energetică a României\n\nUnghi: Leagă facturile, industria și independența națională. O țară cu resurse nu poate accepta politici care o fac dependentă, scumpă și vulnerabilă doar pentru a bifa agende scrise în altă parte.\n\nTon: strategic, suveranist, argumentat, fără panică."><b>Energie</b>Facturi, industrie și independență națională.</div>
+            <div class="example" data-example="Subiect: Credința, rugăciunea, răbdarea și smerenia în aceste vremuri tulburi\n\nUnghi: Scrie în stil creștin, cald și așezat, despre biserica sfântă, empatie, iubirea de oameni, comunitatea puternică și unită, rădăcini, familie și nădejde. Leagă tema de viața concretă a oamenilor: frică, singurătate, dezbinare, oboseală, nevoia de sprijin și de sens.\n\nTon: religios, luminos, smerit, fără propagandă de partid, fără predică agresivă, fără judecarea oamenilor.\n\nLimite: nu inventa citate biblice; dacă folosești trimiteri religioase, păstrează-le simple și sigure."><b>Credință</b>Rugăciune, răbdare, smerenie și comunitate unită.</div>
           </div>
         </div>
 
