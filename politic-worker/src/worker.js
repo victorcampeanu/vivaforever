@@ -1,10 +1,26 @@
 const MAX_SUBJECT_LEN = 500;
 const TONE_OPTIONS = ["echilibrat", "ferm", "agresiv", "popular", "analitic", "ironie-rece"];
 const VIEWPOINT_OPTIONS = ["suveranist", "aur", "psd", "pnl", "usr", "conservator", "conservator-independent", "crestin-religios", "neutru-critic"];
+const AUTO_SUBJECTS = {
+  "crestin-religios": [
+    "Credința, rugăciunea, răbdarea și smerenia în aceste vremuri tulburi",
+    "Milostenia și ajutorarea aproapelui într-o societate obosită",
+    "Iertarea, pacea sufletească și vindecarea dezbinării dintre oameni",
+    "Rădăcinile, satul, familia și biserica într-o lume care își pierde reperele",
+  ],
+  default: [
+    "O temă politică românească importantă pentru oamenii obișnuiți, aleasă din actualitatea recentă",
+  ],
+};
 const JOB_PREFIX = "job:";
 const INDEX_KEY = "jobs:index";
 const PUBLIC_FEED_KEY = "casa-publica:feed";
 const DIRECT_ORIGIN = "https://gpt.vivaforever.ro";
+
+function autoSubject(viewpoint) {
+  const options = AUTO_SUBJECTS[viewpoint] || AUTO_SUBJECTS.default;
+  return options[Math.floor(Math.random() * options.length)];
+}
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -636,6 +652,23 @@ function autoResizeSubject() {
   el.style.overflowY = 'hidden';
 }
 
+const AUTO_SUBJECTS = {
+  'crestin-religios': [
+    'Credința, rugăciunea, răbdarea și smerenia în aceste vremuri tulburi',
+    'Milostenia și ajutorarea aproapelui într-o societate obosită',
+    'Iertarea, pacea sufletească și vindecarea dezbinării dintre oameni',
+    'Rădăcinile, satul, familia și biserica într-o lume care își pierde reperele',
+  ],
+  default: [
+    'O temă politică românească importantă pentru oamenii obișnuiți, aleasă din actualitatea recentă',
+  ],
+};
+
+function autoSubject(viewpoint) {
+  const options = AUTO_SUBJECTS[viewpoint] || AUTO_SUBJECTS.default;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
 function randomizeExamples() {
   const items = Array.from(document.querySelectorAll('.example'));
   items
@@ -692,13 +725,12 @@ async function login() {
 }
 
 async function createJob() {
-  const subject = $('subject').value.trim();
-  if (!subject) return;
+  const tone = $('toneSelect')?.value || 'echilibrat';
+  const viewpoint = $('viewpointSelect')?.value || 'suveranist';
+  const subject = $('subject').value.trim() || autoSubject(viewpoint);
   $('goBtn').disabled = true;
   $('createMsg').textContent = '';
   try {
-    const tone = $('toneSelect')?.value || 'echilibrat';
-    const viewpoint = $('viewpointSelect')?.value || 'suveranist';
     const job = await api('/api/jobs', {method:'POST', body:JSON.stringify({subject, tone, viewpoint})});
     $('subject').value = '';
     autoResizeSubject();
@@ -1419,10 +1451,9 @@ export default {
 
       if (url.pathname === "/api/jobs" && request.method === "POST") {
         const body = await request.json().catch(() => ({}));
-        const subject = String(body.subject || "").trim().slice(0, MAX_SUBJECT_LEN);
         const tone = TONE_OPTIONS.includes(String(body.tone || "")) ? String(body.tone) : "echilibrat";
         const viewpoint = VIEWPOINT_OPTIONS.includes(String(body.viewpoint || "")) ? String(body.viewpoint) : "suveranist";
-        if (!subject) return json({ error: "subject required" }, 400, corsHeaders(request));
+        const subject = (String(body.subject || "").trim() || autoSubject(viewpoint)).slice(0, MAX_SUBJECT_LEN);
         const id = `${Date.now().toString(36)}-${(await sha256(subject + tone + viewpoint + nowIso())).slice(0, 10)}`;
         const job = { id, subject, tone, viewpoint, status: "queued", created_at: nowIso(), updated_at: nowIso() };
         await saveJobWithIndex(env, job);
