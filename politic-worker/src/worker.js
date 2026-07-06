@@ -137,6 +137,7 @@ function jobToMeta(job) {
     id: String(job.id),
     source: job.source || "manual",
     subject: job.subject || "",
+    auto_subject: Boolean(job.auto_subject),
     title: job.title || "",
     tone: job.tone || "",
     viewpoint: job.viewpoint || "",
@@ -228,6 +229,22 @@ async function hydrateIndexMetadata(env, entries) {
 async function loadJob(env, id) {
   const raw = await env.POLITIC_KV.get(`${JOB_PREFIX}${id}`);
   return raw ? JSON.parse(raw) : null;
+}
+
+function isStaleActiveJob(job, maxAgeMs = 25 * 60 * 1000) {
+  if (!job || !["queued", "claimed", "running"].includes(job.status)) return false;
+  const touched = Date.parse(job.updated_at || job.claimed_at || job.created_at || "") || 0;
+  return Boolean(touched && Date.now() - touched > maxAgeMs);
+}
+
+async function failStaleActiveJob(env, job) {
+  if (!isStaleActiveJob(job)) return job;
+  job.status = "failed";
+  job.error = "Generarea a rămas blocată și a fost oprită automat. Pornește articolul din nou.";
+  job.completed_at = nowIso();
+  job.updated_at = nowIso();
+  await saveJobWithIndex(env, job);
+  return job;
 }
 
 async function saveJob(env, job) {
@@ -659,8 +676,8 @@ function isGeneratingStatus(status) {
   return status === 'queued' || status === 'running' || status === 'claimed';
 }
 function jobDisplayTitle(job) {
-  if (isGeneratingStatus(job?.status)) return 'Articol în curs de generare';
-  if (job?.status === 'failed') return job?.title || 'Articol eșuat';
+  if (isGeneratingStatus(job?.status)) return job?.auto_subject ? 'Articol în curs de generare' : (job?.subject || 'Articol în curs de generare');
+  if (job?.status === 'failed') return job?.title || job?.subject || 'Articol eșuat';
   return job?.title || job?.subject || 'Articol';
 }
 function autoResizeSubject() {
@@ -761,7 +778,7 @@ async function login() {
 async function createJob() {
   const tone = $('toneSelect')?.value || 'echilibrat';
   const viewpoint = $('viewpointSelect')?.value || 'suveranist';
-  const subject = $('subject').value.trim() || autoSubject(viewpoint);
+  const subject = $('subject').value.trim();
   $('goBtn').disabled = true;
   $('createMsg').textContent = '';
   try {
@@ -1357,7 +1374,7 @@ export default {
         const id = decodeURIComponent(url.pathname.split("/")[4]);
         const job = await loadJob(env, id);
         if (!job) return json({ exists: false });
-        return json({ exists: true, status: job.status });
+        return json({ exists: true, status: job.status, job: jobToMeta(job) });
       }
 
       if (url.pathname.match(/^\/api\/agent\/jobs\/[^/]+\/status$/) && request.method === "POST") {
@@ -1509,6 +1526,13 @@ export default {
 
       if (url.pathname === "/api/jobs" && request.method === "GET") {
         const jobs = await hydrateIndexMetadata(env, await loadIndexEntries(env));
+        for (const entry of jobs) {
+          if (isStaleActiveJob(entry)) {
+            const full = await loadJob(env, entry.id);
+            const repaired = await failStaleActiveJob(env, full);
+            Object.assign(entry, jobToMeta(repaired));
+          }
+        }
         jobs.sort((a, b) => jobSortDate(b).localeCompare(jobSortDate(a)));
         return json({ jobs }, 200, corsHeaders(request));
       }
@@ -1517,9 +1541,11 @@ export default {
         const body = await request.json().catch(() => ({}));
         const tone = TONE_OPTIONS.includes(String(body.tone || "")) ? String(body.tone) : "echilibrat";
         const viewpoint = VIEWPOINT_OPTIONS.includes(String(body.viewpoint || "")) ? String(body.viewpoint) : "suveranist";
-        const subject = (String(body.subject || "").trim() || autoSubject(viewpoint)).slice(0, MAX_SUBJECT_LEN);
+        const rawSubject = String(body.subject || "").trim();
+        const auto_subject = !rawSubject;
+        const subject = (rawSubject || autoSubject(viewpoint)).slice(0, MAX_SUBJECT_LEN);
         const id = `${Date.now().toString(36)}-${(await sha256(subject + tone + viewpoint + nowIso())).slice(0, 10)}`;
-        const job = { id, subject, tone, viewpoint, status: "queued", created_at: nowIso(), updated_at: nowIso() };
+        const job = { id, subject, auto_subject, tone, viewpoint, status: "queued", created_at: nowIso(), updated_at: nowIso() };
         await saveJobWithIndex(env, job);
         try {
           await startDirect(env, "/politic-agent/start-article", job);
@@ -1535,8 +1561,9 @@ export default {
 
       const match = url.pathname.match(/^\/api\/jobs\/([^/]+)$/);
       if (match && request.method === "GET") {
-        const job = await loadJob(env, decodeURIComponent(match[1]));
+        let job = await loadJob(env, decodeURIComponent(match[1]));
         if (!job) return json({ error: "not found" }, 404, corsHeaders(request));
+        job = await failStaleActiveJob(env, job);
         return json(job, 200, corsHeaders(request));
       }
 
