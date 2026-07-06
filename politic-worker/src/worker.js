@@ -1483,21 +1483,119 @@ export default {
       }
 
       if (url.pathname === "/api/agent/archive" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const items = Array.isArray(body.items) ? body.items : [];
+        const ids = await loadIndex(env);
+        const imported = [];
+        for (const raw of items.slice(0, 250)) {
+          if (!raw || !raw.id) continue;
+          const id = String(raw.id).slice(0, 160);
+          const title = String(raw.title || raw.subject || "").trim().slice(0, 300);
+          const topic = String(raw.topic || raw.subject || title).trim().slice(0, 500);
+          const articleText = cleanArticleTextForTitle(String(raw.article_text || "").trim(), title);
+          if (!title || !articleText) continue;
+          const existing = await loadJob(env, id);
+          const date = String(raw.date || raw.completed_at || raw.created_at || nowIso()).slice(0, 40);
+          const createdAt = date.length === 10 ? `${date}T00:00:00.000Z` : date;
+          const job = {
+            ...(existing || {}),
+            id,
+            source: "archive",
+            subject: topic,
+            topic,
+            title,
+            status: "done",
+            article_text: articleText,
+            sources: Array.isArray(raw.sources) ? raw.sources.slice(0, 20) : [],
+            markdown_path: raw.markdown_path || "",
+            image_path: raw.image_path || existing?.image_path || "",
+            image_data_url: raw.image_data_url || existing?.image_data_url || "",
+            image_status: (raw.image_data_url || existing?.image_data_url) ? "done" : "idle",
+            image_prompt: raw.image_prompt || existing?.image_prompt || "",
+            tone: raw.tone || existing?.tone || "",
+            viewpoint: raw.viewpoint || existing?.viewpoint || "",
+            tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 20) : (existing?.tags || []),
+            created_at: createdAt,
+            completed_at: raw.completed_at || createdAt,
+            updated_at: nowIso(),
+            error: "",
+          };
+          await saveJobWithIndex(env, job);
+          imported.push(id);
+        }
         try {
-          const body = await request.json().catch(() => ({}));
-          const items = Array.isArray(body.items) ? body.items : [];
-          let imported = 0;
-          for (const raw of items) {
-            if (raw && raw.id) {
-              // minimal: just acknowledge
-              imported++;
-            }
+          await rebuildPublicFeed(env);
+        } catch (e) {
+          console.warn("public feed rebuild after archive import failed", e);
+        }
+        return json({ ok: true, imported: imported.length });
+      }
+
+
+      if (url.pathname === "/api/agent/debug-create-archive" && request.method === "POST") {
+        try {
+          const b = await request.json().catch(() => ({}));
+          const id = b.id || "archive:6796e9a6f00b";
+          const title = b.title || "Biserica ortodoxă și legăturile care țin comunitățile vii";
+          const article_text = b.article_text || "Test text pentru biserica.";
+          const tags = b.tags || ["biserica","sat","comunitate","credinta"];
+          const job = {
+            id,
+            source: "archive",
+            title,
+            topic: "biserca ortodoxa",
+            subject: title,
+            status: "done",
+            article_text,
+            sources: [],
+            tags,
+            tone: "",
+            viewpoint: "",
+            created_at: "2026-07-06T00:00:00.000Z",
+            completed_at: "2026-07-06T00:00:00.000Z",
+            updated_at: new Date().toISOString(),
+            image_status: "idle",
+            error: ""
+          };
+          await saveJobWithIndex(env, job);
+          return json({ ok: true, id, tags });
+        } catch (e) {
+          return json({ error: String(e.message || e) }, 500);
+        }
+      }
+
+      
+      if (url.pathname === "/api/agent/debug-set-tags" && request.method === "POST") {
+        try {
+          const b = await request.json().catch(() => ({}));
+          const id = b.id || "archive:6796e9a6f00b";
+          let job = await loadJob(env, id);
+          const tags = b.tags || ["biserica", "sat", "comunitate", "credinta"];
+          if (!job) {
+            job = {
+              id,
+              source: "archive",
+              title: b.title || "Biserica ortodoxă și legăturile care țin comunitățile vii",
+              topic: "biserca ortodoxa",
+              subject: b.title || "Biserica ortodoxă și legăturile care țin comunitățile vii",
+              status: "done",
+              article_text: b.article_text || "Text articol.",
+              sources: [],
+              tags,
+              created_at: "2026-07-06T00:00:00.000Z",
+              completed_at: "2026-07-06T00:00:00.000Z",
+              updated_at: new Date().toISOString(),
+              image_status: "idle",
+              error: ""
+            };
+          } else {
+            job.tags = tags;
           }
-          return json({ ok: true, imported, note: "minimal for debug" });
+          await saveJobWithIndex(env, job);
+          return json({ ok: true, id, tags });
         } catch (e) {
           return json({ error: String(e) }, 500);
         }
-      }
       }
 
       if (url.pathname === "/api/agent/repair-completed-articles" && request.method === "POST") {
