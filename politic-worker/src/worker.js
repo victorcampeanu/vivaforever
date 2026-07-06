@@ -283,19 +283,29 @@ async function loadPublicFeed(env, limit) {
   return (await rebuildPublicFeed(env)).slice(0, limit);
 }
 
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function startDirect(env, path, job) {
   if (!env.HERMES_SHARED_SECRET) throw new Error("direct secret missing");
-  const res = await fetch(DIRECT_ORIGIN + path, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "authorization": `Bearer ${env.HERMES_SHARED_SECRET}`,
-    },
-    body: JSON.stringify({ job }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `direct server ${res.status}`);
-  return data;
+  let lastError = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (attempt) await wait([1500, 3500, 7000][attempt - 1]);
+    const res = await fetch(DIRECT_ORIGIN + path + `?t=${Date.now()}-${attempt}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "authorization": `Bearer ${env.HERMES_SHARED_SECRET}`,
+      },
+      body: JSON.stringify({ job }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return data;
+    lastError = new Error(data.error || `direct server ${res.status}`);
+    if (![405, 502, 503, 504].includes(res.status)) throw lastError;
+  }
+  throw lastError || new Error("direct server unavailable");
 }
 
 const PAGE = `<!doctype html>
