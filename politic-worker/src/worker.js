@@ -550,6 +550,8 @@ const PAGE = `<!doctype html>
                   <button id="copyArticleTextBtn">Copiază text</button>
                   <button id="copyArticleTitleBtn">Copiază titlu</button>
                   <button id="shareArticleBtn">Distribuie link</button>
+                  <button id="retryArticleBtn">Reîncearcă</button>
+                  <button id="stopGenerationBtn">Oprește generarea</button>
                   <button id="deleteArticleBtn" class="danger">Șterge</button>
                 </div>
               </div>
@@ -667,7 +669,7 @@ function articleTextForDisplay(job) {
   return stripDuplicateInlineTitle(stripInlineSourceSection(job?.article_text || ''), job?.title || job?.subject || '');
 }
 function estimatedDoneText(job) {
-  const base = job.created_at ? new Date(job.created_at) : new Date();
+  const base = job.updated_at ? new Date(job.updated_at) : (job.created_at ? new Date(job.created_at) : new Date());
   const estimated = new Date(base.getTime() + 7 * 60 * 1000);
   const time = estimated.toLocaleTimeString('ro-RO', { hour:'2-digit', minute:'2-digit' });
   return 'Se estimează că va fi gata la ' + time + '. Pagina se actualizează automat.';
@@ -917,7 +919,11 @@ async function loadJob(id) {
   $('emptyViewer').style.display = 'none';
   $('articleContent').style.display = '';
   $('articleTitle').textContent = jobDisplayTitle(job);
+  updateArticleMenu();
   $('articleMeta').textContent = '';
+  if (isGeneratingStatus(job.status) && job.subject && !job.auto_subject) {
+    $('articleMeta').textContent = job.subject;
+  }
   $('articleError').textContent = job.status === 'failed' ? (job.error || '') : '';
   const waitingText = isGeneratingStatus(job.status) ? estimatedDoneText(job) : '';
   const articleText = articleTextForDisplay(job);
@@ -930,7 +936,24 @@ async function loadJob(id) {
   updateMobileBackButton();
 }
 
+function updateArticleMenu() {
+  const menu = $('articleMenu');
+  if (!menu || !currentJob) return;
+
+  const retry = $('retryArticleBtn');
+  const stop = $('stopGenerationBtn');
+  const del = $('deleteArticleBtn');
+
+  const isGen = isGeneratingStatus(currentJob.status);
+  const isFail = currentJob.status === 'failed';
+
+  if (retry) retry.style.display = isFail ? '' : 'none';
+  if (stop) stop.style.display = isGen ? '' : 'none';
+  if (del) del.style.display = isGen ? 'none' : '';
+}
+
 function toggleArticleMenu() {
+  updateArticleMenu();
   const menu = $('articleMenu');
   menu.hidden = !menu.hidden;
 }
@@ -943,6 +966,20 @@ async function copyArticleText() {
 async function copyArticleTitle() {
   await copyToClipboard(currentJob?.title || currentJob?.subject || $('articleTitle').textContent || '');
   $('articleMenu').hidden = true;
+}
+
+async function retryCurrentArticle() {
+  $('articleMenu').hidden = true;
+  if (currentJob?.id) {
+    await requeueJob(currentJob.id);
+  }
+}
+
+async function stopCurrentGeneration() {
+  $('articleMenu').hidden = true;
+  if (currentJob?.id) {
+    await stopGeneration(currentJob.id);
+  }
 }
 
 async function shareArticle() {
@@ -996,6 +1033,8 @@ $('articleActionBtn').onclick = toggleArticleMenu;
 $('copyArticleTextBtn').onclick = copyArticleText;
 $('copyArticleTitleBtn').onclick = copyArticleTitle;
 $('shareArticleBtn').onclick = shareArticle;
+$('retryArticleBtn').onclick = retryCurrentArticle;
+$('stopGenerationBtn').onclick = stopCurrentGeneration;
 $('deleteArticleBtn').onclick = deleteCurrentArticle;
 $('generateImageBtn').onclick = requestImage;
 $('subject').addEventListener('input', autoResizeSubject);
