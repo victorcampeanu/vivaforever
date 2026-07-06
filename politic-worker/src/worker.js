@@ -1523,11 +1523,8 @@ export default {
           await saveJobWithIndex(env, job);
           imported.push(id);
         }
-        try {
-          await rebuildPublicFeed(env);
-        } catch (e) {
-          console.warn("public feed rebuild after archive import failed", e);
-        }
+        // rebuild skipped to avoid timeout/crash on heavy index load
+        // try { await rebuildPublicFeed(env); } catch (e) { console.warn("public feed rebuild after archive import failed", e); }
         return json({ ok: true, imported: imported.length });
       }
 
