@@ -522,6 +522,7 @@ const PAGE = `<!doctype html>
                 <div id="articleMenu" class="articleMenu" hidden>
                   <button id="copyArticleTextBtn">Copiază text</button>
                   <button id="copyArticleTitleBtn">Copiază titlu</button>
+                  <button id="shareArticleBtn">Distribuie link</button>
                   <button id="deleteArticleBtn" class="danger">Șterge</button>
                 </div>
               </div>
@@ -694,6 +695,20 @@ function scrollArticleIntoView() {
   }
 }
 
+function articleUrl(id) {
+  const url = new URL(location.href);
+  url.pathname = '/';
+  if (id) url.searchParams.set('article', id);
+  else url.searchParams.delete('article');
+  url.hash = '';
+  return url.toString();
+}
+
+function setArticleUrl(id) {
+  const next = articleUrl(id);
+  if (next !== location.href) history.replaceState(null, '', next);
+}
+
 function openSidebar() { document.body.classList.add('sidebarOpen'); }
 function closeSidebar() { document.body.classList.remove('sidebarOpen'); }
 
@@ -704,6 +719,7 @@ function updateMobileBackButton() {
 
 function showComposer() {
   selectedId = null;
+  setArticleUrl('');
   clearViewer();
   closeSidebar();
   refreshJobs();
@@ -813,12 +829,23 @@ function clearViewer() {
 async function deleteJob(id) {
   if (!id) return;
   if (!confirm('Ștergi acest articol?')) return;
-  await api('/api/jobs/' + encodeURIComponent(id), { method:'DELETE' });
-  if (selectedId === id) {
+  const previousJobs = allJobs.slice();
+  const wasSelected = selectedId === id;
+  allJobs = allJobs.filter(job => job.id !== id);
+  renderJobs(allJobs);
+  if (wasSelected) {
     selectedId = null;
+    setArticleUrl('');
     clearViewer();
   }
-  await refreshJobs();
+  try {
+    await api('/api/jobs/' + encodeURIComponent(id), { method:'DELETE' });
+  } catch (e) {
+    allJobs = previousJobs;
+    renderJobs(allJobs);
+    if (wasSelected) await loadJob(id).catch(() => clearViewer());
+    alert(e.message || 'Nu am putut șterge articolul.');
+  }
 }
 
 async function requestImage() {
@@ -857,6 +884,8 @@ function renderImageControls(job) {
 async function loadJob(id) {
   const job = await api('/api/jobs/' + encodeURIComponent(id));
   currentJob = job;
+  selectedId = job.id;
+  setArticleUrl(job.id);
   $('content').classList.remove('emptyMode');
   $('emptyViewer').style.display = 'none';
   $('articleContent').style.display = '';
@@ -887,6 +916,22 @@ async function copyArticleText() {
 async function copyArticleTitle() {
   await copyToClipboard(currentJob?.title || currentJob?.subject || $('articleTitle').textContent || '');
   $('articleMenu').hidden = true;
+}
+
+async function shareArticle() {
+  if (!currentJob?.id) return;
+  const url = articleUrl(currentJob.id);
+  const title = currentJob.title || currentJob.subject || 'Articol';
+  $('articleMenu').hidden = true;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url });
+      return;
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+    }
+  }
+  await copyToClipboard(url);
 }
 
 async function deleteCurrentArticle() {
@@ -923,6 +968,7 @@ $('mobileBackBtn').onclick = showComposer;
 $('articleActionBtn').onclick = toggleArticleMenu;
 $('copyArticleTextBtn').onclick = copyArticleText;
 $('copyArticleTitleBtn').onclick = copyArticleTitle;
+$('shareArticleBtn').onclick = shareArticle;
 $('deleteArticleBtn').onclick = deleteCurrentArticle;
 $('generateImageBtn').onclick = requestImage;
 $('subject').addEventListener('input', autoResizeSubject);
