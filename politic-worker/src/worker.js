@@ -271,6 +271,8 @@ function publicJob(job) {
     article_text: cleanArticleTextForTitle(job.article_text || "", title),
     sources: Array.isArray(job.sources) ? job.sources.slice(0, 20) : [],
     image_data_url: job.image_data_url || "",
+    tone: job.tone || "",
+    viewpoint: job.viewpoint || "",
   };
 }
 
@@ -557,6 +559,7 @@ const PAGE = `<!doctype html>
               </div>
             </div>
             <div id="articleMeta" class="muted"></div>
+            <div id="articleTags" class="muted" style="margin: -2px 0 10px; font-size:13px; line-height:1.25;"></div>
             <img id="articleImage" class="hero" style="display:none" alt="Imagine articol">
             <div id="imageControls" class="imageControls" hidden>
               <button id="generateImageBtn" class="imageBtn">Generează imagine</button>
@@ -845,6 +848,7 @@ function clearViewer() {
   $('articleContent').style.display = 'none';
   $('articleTitle').textContent = 'Articol';
   $('articleMeta').textContent = '';
+  const tagsEl = $('articleTags'); if (tagsEl) tagsEl.textContent = '';
   $('articleError').textContent = '';
   $('articleBody').textContent = '';
   renderSources([]);
@@ -921,6 +925,26 @@ async function loadJob(id) {
   $('articleTitle').textContent = jobDisplayTitle(job);
   updateArticleMenu();
   $('articleMeta').textContent = '';
+  const tagsEl = $('articleTags');
+  if (tagsEl) {
+    let tagStr = '';
+    const tags = Array.isArray(job.tags) && job.tags.length ? job.tags : null;
+    if (tags) {
+      tagStr = tags.join(' / ');
+    } else {
+      const tone = job.tone || '';
+      const vp = job.viewpoint || '';
+      if (tone || vp) {
+        const toneDisp = tone ? tone.replace(/-/g, ' ') : '';
+        const vpDisp = vp ? vp.toUpperCase() : '';
+        const parts = [toneDisp, vpDisp].filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1));
+        tagStr = parts.join(' / ');
+        if (tagStr) tagStr = 'Selecție: ' + tagStr;
+      }
+    }
+    tagsEl.textContent = tagStr;
+    tagsEl.style.display = tagStr ? '' : 'none';
+  }
   if (isGeneratingStatus(job.status) && job.subject && !job.auto_subject) {
     $('articleMeta').textContent = job.subject;
   }
@@ -1488,6 +1512,9 @@ export default {
             image_data_url: raw.image_data_url || existing?.image_data_url || "",
             image_status: (raw.image_data_url || existing?.image_data_url) ? "done" : "idle",
             image_prompt: raw.image_prompt || existing?.image_prompt || "",
+            tone: raw.tone || existing?.tone || "",
+            viewpoint: raw.viewpoint || existing?.viewpoint || "",
+            tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 20) : (existing?.tags || []),
             created_at: createdAt,
             completed_at: raw.completed_at || createdAt,
             updated_at: nowIso(),
