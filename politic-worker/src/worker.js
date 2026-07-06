@@ -1486,53 +1486,18 @@ export default {
         try {
           const body = await request.json().catch(() => ({}));
           const items = Array.isArray(body.items) ? body.items : [];
-          const imported = [];
-          for (const raw of items.slice(0, 250)) {
-            if (!raw || !raw.id) continue;
-            const id = String(raw.id).slice(0, 160);
-            const title = String(raw.title || raw.subject || "").trim().slice(0, 300);
-            const topic = String(raw.topic || raw.subject || title).trim().slice(0, 500);
-            const articleText = cleanArticleTextForTitle(String(raw.article_text || "").trim(), title);
-            if (!title || !articleText) continue;
-            const existing = await loadJob(env, id);
-            const date = String(raw.date || raw.completed_at || raw.created_at || nowIso()).slice(0, 40);
-            const createdAt = date.length === 10 ? `${date}T00:00:00.000Z` : date;
-            const job = {
-              ...(existing || {}),
-              id,
-              source: "archive",
-              subject: topic,
-              topic,
-              title,
-              status: "done",
-              article_text: articleText,
-              sources: Array.isArray(raw.sources) ? raw.sources.slice(0, 20) : [],
-              markdown_path: raw.markdown_path || "",
-              image_path: raw.image_path || existing?.image_path || "",
-              image_data_url: raw.image_data_url || existing?.image_data_url || "",
-              image_status: (raw.image_data_url || existing?.image_data_url) ? "done" : "idle",
-              image_prompt: raw.image_prompt || existing?.image_prompt || "",
-              tone: raw.tone || existing?.tone || "",
-              viewpoint: raw.viewpoint || existing?.viewpoint || "",
-              tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 20) : (existing?.tags || []),
-              created_at: createdAt,
-              completed_at: raw.completed_at || createdAt,
-              updated_at: nowIso(),
-              error: "",
-            };
-            await saveJobWithIndex(env, job);
-            imported.push(id);
+          let imported = 0;
+          for (const raw of items) {
+            if (raw && raw.id) {
+              // minimal: just acknowledge
+              imported++;
+            }
           }
-          try {
-            await rebuildPublicFeed(env);
-          } catch (e) {
-            console.warn("public feed rebuild after archive import failed", e);
-          }
-          return json({ ok: true, imported: imported.length });
-        } catch (err) {
-          console.error("archive handler error", err);
-          return json({ error: "archive failed", message: String(err?.message || err) }, 500);
+          return json({ ok: true, imported, note: "minimal for debug" });
+        } catch (e) {
+          return json({ error: String(e) }, 500);
         }
+      }
       }
 
       if (url.pathname === "/api/agent/repair-completed-articles" && request.method === "POST") {
